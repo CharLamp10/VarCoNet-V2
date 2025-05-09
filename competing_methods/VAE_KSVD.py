@@ -127,12 +127,12 @@ def main(config):
     for key in data:
         train_data.append(data[key])
     
-    data = np.load(os.path.join(path,'test_data_HCP_' + config['atlas'] + '_1_resampled.npz'))
+    data = np.load(os.path.join(path,'val_data_HCP_' + config['atlas'] + '_1_resampled.npz'))
     val_data1 = []
     for key in data:
         val_data1.append(data[key])
     
-    data = np.load(os.path.join(path,'test_data_HCP_' + config['atlas'] + '_2_resampled.npz'))
+    data = np.load(os.path.join(path,'val_data_HCP_' + config['atlas'] + '_2_resampled.npz'))
     val_data2 = []
     for key in data:
         val_data1.append(data[key])
