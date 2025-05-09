@@ -145,7 +145,6 @@ class ABIDEDataset_BAnD(Dataset):
         y = torch.tensor(self.labels[idx], dtype=torch.long)
         return x, y
     
-    
 def upper_triangular_cosine_similarity(x):
     N, M, D = x.shape
     x_norm = F.normalize(x, p=2, dim=-1)

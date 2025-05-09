@@ -4,7 +4,7 @@ import torch
 from utils import InfoNCE
 from tqdm import tqdm
 from torch.optim import Adam
-from VarCoNet import VarCoNet
+from model_scripts.VarCoNet import VarCoNet
 from utils import DualBranchContrast
 from pl_bolts.optimizers import LinearWarmupCosineAnnealingLR
 import os
@@ -58,7 +58,7 @@ def test(encoder_model,test_data1,test_data2,num_winds,batch_size,device):
                 if n >= i:
                     accuracies = []
                     for j in range(num_real):
-                        corr_coeffs = torch.corrcoef(torch.cat([outputs1[:, i*num_real+j, :],outputs2[:, n*num_real+j, :]],dim=0))[0:outputs1.shape[0],outputs1.shape[0]:]#np.corrcoef(outputs1[:, i*num_real+j, :], outputs2[:, n*num_real+j, :])[0:outputs1.shape[0],outputs1.shape[0]:]
+                        corr_coeffs = torch.corrcoef(torch.cat([outputs1[:, i*num_real+j, :],outputs2[:, n*num_real+j, :]],dim=0))[0:outputs1.shape[0],outputs1.shape[0]:]
                         corr_coeffs_all.append(corr_coeffs.cpu().numpy())
                         lower_indices = torch.tril_indices(corr_coeffs.shape[0],corr_coeffs.shape[1], offset=-1)
                         upper_indices = torch.triu_indices(corr_coeffs.shape[0],corr_coeffs.shape[1], offset=1)
@@ -126,107 +126,92 @@ def main(config):
     
     
     device = torch.device(config['device']) if torch.cuda.is_available() else torch.device("cpu")
-    batch_size = config['batch_size']
-    shuffle = config['shuffle']
-    epochs = config['epochs']
-    early_stopping = config['early_stopping']
-    lr = config['lr']
-    tau = config['tau']
-    train_length_limits = config['train_length_limits']
-    max_length = train_length_limits[-1]
-    test_winds = config['test_lengths']
-    eval_epochs = config['eval_epochs']
-    save_models = config['save_models']
-    save_results = config['save_results']
-    load_prev_model = config['load_prev_model']
+    max_length = config['train_length_limits'][-1]
     
     for i,data in enumerate(test_data1):
         data = torch.from_numpy(data.astype(np.float32))
-        data = test_augment(data, config['test_lengths'], config['num_test_winds'], max_length)
+        data = test_augment(data, config['test_winds'], config['num_test_winds'], max_length)
         test_data1[i] = data
         
     for i,data in enumerate(test_data2):
         data = torch.from_numpy(data.astype(np.float32))
-        data = test_augment(data, config['test_lengths'], config['num_test_winds'], max_length)
+        data = test_augment(data, config['test_winds'], config['num_test_winds'], max_length)
         test_data2[i] = data
         
     for i,data in enumerate(val_data1):
         data = torch.from_numpy(data.astype(np.float32))
-        data = test_augment(data, config['test_lengths'], config['num_test_winds'], max_length)
+        data = test_augment(data, config['test_winds'], config['num_test_winds'], max_length)
         val_data1[i] = data
         
     for i,data in enumerate(val_data2):
         data = torch.from_numpy(data.astype(np.float32))
-        data = test_augment(data, config['test_lengths'], config['num_test_winds'], max_length)
+        data = test_augment(data, config['test_winds'], config['num_test_winds'], max_length)
         val_data2[i] = data
         
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle = shuffle)
+    train_loader = DataLoader(train_data, batch_size=config['batch_size'], shuffle=config['shuffle'])
 
     
     model_config = config['model_config']
     model_config['max_length'] = max_length
   
     encoder_model = VarCoNet(model_config, roi_num).to(device)
-    contrast_model = DualBranchContrast(loss=InfoNCE(tau=tau),mode='L2L').to(device)   
-    optimizer = Adam(encoder_model.parameters(), lr=lr)
+    contrast_model = DualBranchContrast(loss=InfoNCE(tau=config['tau']),mode='L2L').to(config['device'])   
+    optimizer = Adam(encoder_model.parameters(), lr=config['lr'])
     scheduler = LinearWarmupCosineAnnealingLR(
         optimizer=optimizer,
         warmup_start_lr = 1e-5,
         warmup_epochs=config['warm_up_epochs'],
-        max_epochs=epochs)
+        max_epochs=config['epochs'])
               
     max_val_acc = 0
     losses = []
     res_all = []
     count = 0
-    if not load_prev_model:
-        with tqdm(total=epochs, desc='(T)') as pbar:
-            for epoch in range(1,epochs+1):
-                total_loss = 0.0
-                batch_count = 0                              
-                for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
-                    sample_inds = removeDuplicates(names,sample_inds)
-                    batch_list = [train_data[i] for i in sample_inds]
-                    batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
-                    batch_data = next(iter(batch_loader))
-                    batch_data = augment_hcp(batch_data,train_length_limits,device)
-                    loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
-                    total_loss += loss
-                    batch_count += 1
-                scheduler.step()
-                average_loss = total_loss / batch_count if batch_count > 0 else float('nan')
-                losses.append(average_loss)
-                pbar.set_postfix({'loss': average_loss})
-                pbar.update()        
-                
-                if epoch in eval_epochs:
-                    res = test(encoder_model,val_data1,val_data2,
-                               len(test_winds),batch_size,device)
-                    res_all.append(res)
-                    if np.mean(res[1]) + np.min(res[1]) > max_val_acc:
-                        max_val_acc = np.mean(res[1]) + np.min(res[1])
-                        max_val_acc_model = copy.deepcopy(encoder_model.state_dict())
-                        count = 0
-                    else:
-                        if epoch > eval_epochs[0]:
-                            count += 1
-                if count >= early_stopping:
-                    print('Early stopping')
-                    break
-                print('')
-        if save_models:        
-            if not os.path.exists(os.path.join('models','VarCoNetV2')):
-                os.makedirs(os.path.join('models','VarCoNetV2'), exist_ok=True)        
-            torch.save(max_val_acc_model, os.path.join('models','VarCoNetV2','max_acc_model_' + config['atlas'] + '.pth'))
-    else:
-        max_val_acc_model = torch.load(os.path.join('models','VarCoNetV2','max_acc_model_' + config['atlas'] + '.pth'))
-
+    with tqdm(total=config['epochs'], desc='(T)') as pbar:
+        for epoch in range(1,config['epochs']+1):
+            total_loss = 0.0
+            batch_count = 0                              
+            for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
+                sample_inds = removeDuplicates(names,sample_inds)
+                batch_list = [train_data[i] for i in sample_inds]
+                batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
+                batch_data = next(iter(batch_loader))
+                batch_data = augment_hcp(batch_data,config['train_length_limits'],device)
+                loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
+                total_loss += loss
+                batch_count += 1
+            scheduler.step()
+            average_loss = total_loss / batch_count if batch_count > 0 else float('nan')
+            losses.append(average_loss)
+            pbar.set_postfix({'loss': average_loss})
+            pbar.update()        
+            
+            if epoch in config['eval_epochs']:
+                res = test(encoder_model,val_data1,val_data2,
+                           len(config['test_winds']),config['batch_size'],device)
+                res_all.append(res)
+                if np.mean(res[1]) + np.min(res[1]) > max_val_acc:
+                    max_val_acc = np.mean(res[1]) + np.min(res[1])
+                    max_val_acc_model = copy.deepcopy(encoder_model.state_dict())
+                    count = 0
+                else:
+                    if epoch > config['eval_epochs'][0]:
+                        count += 1
+            if count >= config['early_stopping']:
+                print('Early stopping')
+                break
+            print('')
+    if config['save_models']:        
+        if not os.path.exists(os.path.join(config['path_save'],'models_HCP',config['atlas'],'VarCoNet')):
+            os.makedirs(os.path.join(config['path_save'],'models_HCP',config['atlas'],'VarCoNet'), exist_ok=True)        
+        torch.save(max_val_acc_model, os.path.join(config['path_save'],'models_HCP',config['atlas'],'VarCoNet','max_fingerprinting_acc_model.pth'))
+    
     max_val_acc_encoder_model = VarCoNet(model_config, roi_num).to(device)
     max_val_acc_encoder_model.load_state_dict(max_val_acc_model)
     val_result = test(max_val_acc_encoder_model, val_data1, val_data2,
-                                len(test_winds), batch_size,device)
+                                len(config['test_winds']), config['batch_size'],config['device'])
     test_result = test(max_val_acc_encoder_model, test_data1, test_data2,
-                                len(test_winds), batch_size,device)
+                                len(config['test_winds']), config['batch_size'],config['device'])
     results = {}
     results['losses'] = losses
     results['val_result'] = val_result
@@ -234,10 +219,10 @@ def main(config):
     results['val_results_all'] = res_all
     
     
-    if save_results:
-        if not os.path.exists('results'):
-            os.mkdir('results')   
-        with open(os.path.join('results','test_results_' + config['atlas'] + '_VarCoNetV2.pkl'), 'wb') as f:
+    if config['save_results']:
+        if not os.path.exists(config['path_save'],'results_HCP',config['atlas']):
+            os.mkdir(config['path_save'],'results_HCP',config['atlas'])   
+        with open(os.path.join(config['path_save'],'results_HCP',config['atlas'],'HCP_VarCoNet_results.pkl'), 'wb') as f:
             pickle.dump(results,f)
     return results
 
@@ -247,15 +232,15 @@ if __name__ == '__main__':
 
     parser.add_argument('--path_data', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/SSL_FC_matrix_GNN_data/HCP',
                         help='Path to the dataset')
-    parser.add_argument('--path_save', type=str, default=os.getcwd(),
+    parser.add_argument('--path_save', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results',
                         help='Path to save results')
-    parser.add_argument('--atlas', type=str, choices=['AICHA', 'AAL'], default='AAL',
+    parser.add_argument('--atlas', type=str, choices=['AICHA', 'AAL'], default='AICHA',
                         help='Atlas type to use')
     parser.add_argument('--device', type=str, default='cuda:0',
                         help='Device to use for training')
     parser.add_argument('--train_length_limits', type=int, nargs='+', default=[80,320],
                         help='Minimum and maximum length for augmentation')
-    parser.add_argument('--test_lengths', type=int, nargs='+', default=[80,200,320],
+    parser.add_argument('--test_winds', type=int, nargs='+', default=[80,200,320],
                         help='Lengths used for testing the model')
     parser.add_argument('--num_test_winds', type=int, default=10,
                         help='Number of tests per length to calculate confidence interval')
@@ -269,8 +254,6 @@ if __name__ == '__main__':
                         help='Flag to save trained models')
     parser.add_argument('--save_results', action='store_true',
                         help='Flag to save results')
-    parser.add_argument('--load_prev_model', action='store_true',
-                        help='Flag to load a previously trained model')
 
     args = parser.parse_args()
 
@@ -279,7 +262,7 @@ if __name__ == '__main__':
         'path_save': args.path_save,
         'atlas': args.atlas,
         'train_length_limits': args.train_length_limits,
-        'test_lengths': args.test_lengths,
+        'test_winds': args.test_winds,
         'num_test_winds': args.num_test_winds,
         'shuffle': True,
         'epochs': args.epochs,
@@ -288,12 +271,11 @@ if __name__ == '__main__':
         'eval_epochs': list(range(1, args.epochs+1)),
         'save_models': args.save_models,
         'save_results': args.save_results,
-        'load_prev_model': args.load_prev_model,
         'device': args.device,
         'model_config': {}
     }
 
-    with open(f'best_params_VarCoNet_v2_final_{config["atlas"]}.pkl', 'rb') as f:
+    with open(f'best_params_VarCoNet_{config["atlas"]}.pkl', 'rb') as f:
         best_params = pickle.load(f)
 
     config['batch_size'] = best_params['batch_size']
