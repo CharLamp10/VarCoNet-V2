@@ -1,2 +1,2 @@
-# VarCoNet-V2
-![Model Architecture](paper_plots/block_diagram.png)
+# VarCoNet
+A detailed README file including all information regarding this work will soon be available.
