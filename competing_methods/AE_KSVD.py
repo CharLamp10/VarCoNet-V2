@@ -267,8 +267,8 @@ def main(config):
     results['test_result'] = test_result
     
     if config['save_results']:
-        if not os.path.exists('results_HCP'):
-            os.mkdir('results_HCP')   
+        if not os.path.exists(config['path_save'],'results_HCP'):
+            os.mkdir(config['path_save'],'results_HCP')   
         with open(os.path.join(config['path_save'],'results_HCP',config['atlas'],'HCP_AE_KSVD_results.pkl'), 'wb') as f:
             pickle.dump(results,f)
     return results
