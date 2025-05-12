@@ -84,9 +84,9 @@ def main(config):
     test_losses_bolt = []
     test_aucs_bolt = []
     test_probs_bolt = []
-    test_losses_varconetv2 = []
-    test_aucs_varconetv2 = []
-    test_probs_varconetv2 = []
+    test_losses_varconet = []
+    test_aucs_varconet = []
+    test_probs_varconet = []
     for i in range(10):
         test_dataset = ABIDEDataset(test_data, y)
         test_loader = DataLoader(test_dataset, batch_size=batch_size)   
@@ -114,9 +114,9 @@ def main(config):
         varconet.load_state_dict(state_dict_varconet)
         classifier.load_state_dict(state_dict_cls)
         test_loss,test_auc,test_prob,y_ext_test = test_varconet(varconet, classifier, test_loader, device)
-        test_losses_varconetv2.append(test_loss)
-        test_aucs_varconetv2.append(test_auc)
-        test_probs_varconetv2.append(test_prob)
+        test_losses_varconet.append(test_loss)
+        test_aucs_varconet.append(test_auc)
+        test_probs_varconet.append(test_prob)
         
     results = {}
     results['BolT'] = {}
@@ -125,9 +125,9 @@ def main(config):
     results['BolT']['test_probs'] = test_probs_bolt
     results['BolT']['y_test'] = y
     results['VarCoNet'] = {}
-    results['VarCoNet']['test_losses'] = test_losses_varconetv2
-    results['VarCoNet']['test_aucs'] = test_aucs_varconetv2
-    results['VarCoNet']['test_probs'] = test_probs_varconetv2
+    results['VarCoNet']['test_losses'] = test_losses_varconet
+    results['VarCoNet']['test_aucs'] = test_aucs_varconet
+    results['VarCoNet']['test_probs'] = test_probs_varconet
     results['VarCoNet']['y_test'] = y
     
     if config['save_results']:
@@ -140,9 +140,9 @@ def main(config):
 if __name__ == '__main__':   
     parser = argparse.ArgumentParser(description='Run VarCoNet and BolT on ABIDE II for ASD classification')
 
-    parser.add_argument('--path_data', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/SSL_FC_matrix_GNN_data/ABIDEII/fmriprep',
+    parser.add_argument('--path_data', type=str,
                         help='Path to the dataset')
-    parser.add_argument('--path_save', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results',
+    parser.add_argument('--path_save', type=str,
                         help='Path to save results')
     parser.add_argument('--batch_size', type=int, default=64,
                         help='Batch size')

@@ -228,8 +228,12 @@ def main(config):
                         for param_group in optimizers[i].param_groups:
                             param_group['momentum'] = 0.9
             model_state_dict = copy.deepcopy(models[i].state_dict())
+            if config['save_models']:        
+                if not os.path.exists(os.path.join(config['path_save'],'models_HCP',config['atlas'],'AE_KSVD')):
+                    os.makedirs(os.path.join(config['path_save'],'models_HCP',config['atlas'],'AE_KSVD'), exist_ok=True)        
+                torch.save(model_state_dict, os.path.join(config['path_save'],'models_HCP',config['atlas'],'AE_KSVD','model_length' + str(length) + '.pth'))
         else:
-            model_state_dict = torch.load(os.path.join(config['save_path'],'models_HCP',config['atlas'],'AE_KSVD','model_length' + str(length) + '.pth'))
+            model_state_dict = torch.load(os.path.join(config['path_save'],'models_HCP',config['atlas'],'AE_KSVD','model_length' + str(length) + '.pth'))
             model = Model_AE(length).to(device)
             model.load_state_dict(model_state_dict)
             models.append(model)
@@ -239,10 +243,7 @@ def main(config):
             corr = PCC(dat.T)
             triu_indices = torch.triu_indices(corr.shape[0], corr.shape[0], offset=1)
             corrs.append(corr[triu_indices[0], triu_indices[1]])
-        if config['save_models']:        
-            if not os.path.exists(os.path.join(config['save_path'],'models_HCP',config['atlas'],'AE_KSVD')):
-                os.makedirs(os.path.join(config['save_path'],'models_HCP',config['atlas'],'AE_KSVD'), exist_ok=True)        
-            torch.save(model_state_dict, os.path.join(config['save_path'],'models_HCP',config['atlas'],'AE_KSVD','model_length' + str(length) + '.pth'))
+        
         corrs = torch.stack(corrs)
         first_section = corrs[:int(corrs.shape[0]/3)]
         mid_section = corrs[int(corrs.shape[0]/3):2*int(corrs.shape[0]/3)]
@@ -253,11 +254,11 @@ def main(config):
         corrs = torch.cat([first_samples, mid_samples, last_samples])
         D,x,_ = ksvd(corrs.detach().cpu().numpy(), 100, 25, maxiter=50, device=config['device'])
         if config['save_models']:        
-            if not os.path.exists(os.path.join(config['save_path'],'models_HCP',config['atlas'],'AE_KSVD')):
-                os.makedirs(os.path.join(config['save_path'],'models_HCP',config['atlas'],'AE_KSVD'), exist_ok=True)        
-            torch.save(D, os.path.join(config['save_path'],'models_HCP',config['atlas'],'AE_KSVD','dictionary.pt'))
+            if not os.path.exists(os.path.join(config['path_save'],'models_HCP',config['atlas'],'AE_KSVD')):
+                os.makedirs(os.path.join(config['path_save'],'models_HCP',config['atlas'],'AE_KSVD'), exist_ok=True)        
+            torch.save(D, os.path.join(config['path_save'],'models_HCP',config['atlas'],'AE_KSVD','dictionary.pt'))
     else:
-        D = torch.load(os.path.join(config['save_path'],'models_HCP',config['atlas'],'AE_KSVD','dictionary.pt'))
+        D = torch.load(os.path.join(config['path_save'],'models_HCP',config['atlas'],'AE_KSVD','dictionary.pt'))
     
     val_result = test(models, val_data1, val_data2, D, len(config['train_test_winds']), config['batch_size'], device)
     test_result = test(models, test_data1, test_data2, D, len(config['train_test_winds']), config['batch_size'], device)
@@ -268,7 +269,7 @@ def main(config):
     if config['save_results']:
         if not os.path.exists('results_HCP'):
             os.mkdir('results_HCP')   
-        with open(os.path.join(config['save_path'],'results_HCP',config['atlas'],'HCP_AE_KSVD_results.pkl'), 'wb') as f:
+        with open(os.path.join(config['path_save'],'results_HCP',config['atlas'],'HCP_AE_KSVD_results.pkl'), 'wb') as f:
             pickle.dump(results,f)
     return results
 
@@ -276,9 +277,9 @@ def main(config):
 if __name__ == '__main__':  
     parser = argparse.ArgumentParser(description='Run the method of Cai et al. 2021 on HCP for subject fingerprinting')
     
-    parser.add_argument('--path_data', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/SSL_FC_matrix_GNN_data/HCP',
+    parser.add_argument('--path_data', type=str,
                         help='Path to the dataset')
-    parser.add_argument('--path_save', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results',
+    parser.add_argument('--path_save', type=str,
                         help='Path to save results')
     parser.add_argument('--atlas', type=str, choices=['AICHA', 'AAL'], default='AICHA',
                         help='Atlas type to use')

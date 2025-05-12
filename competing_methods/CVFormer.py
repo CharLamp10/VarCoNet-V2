@@ -163,7 +163,12 @@ def main(config):
             y_test = y[test_index]
             names_train = [names[n] for n in train_index]
             names_test = [names[n] for n in test_index]
-            _, _, y_train, y_val, train_idx, val_idx = train_test_split(train_data_T, y_train, np.arange(len(train_data_T)), test_size=0.15, random_state=42, stratify=y_train)
+            _, _, y_train, y_val, train_idx, val_idx = train_test_split(train_data_T,
+                                                                        y_train,
+                                                                        np.arange(len(train_data_T)), 
+                                                                        test_size=0.15, 
+                                                                        random_state=42, 
+                                                                        stratify=y_train)
             val_data_T = [train_data_T[i] for i in val_idx]
             val_data_C = [train_data_C[i] for i in val_idx]
             train_data_T = [train_data_T[i] for i in train_idx]
@@ -291,7 +296,12 @@ def main(config):
     names_train_ext_all = []
     names_val_ext_all = []
     for i in range(10):
-        _, _, y_train, y_val, train_idx, val_idx = train_test_split(data_T, y, np.arange(len(data_T)), test_size=0.1, random_state=42+i, stratify=y)
+        _, _, y_train, y_val, train_idx, val_idx = train_test_split(data_T,
+                                                                    y, 
+                                                                    np.arange(len(data_T)),
+                                                                    test_size=0.1,
+                                                                    random_state=42+i,
+                                                                    stratify=y)
         val_data_T = [data_T[i] for i in val_idx]
         val_data_C = [data_C[i] for i in val_idx]
         train_data_T = [data_T[i] for i in train_idx]
@@ -437,9 +447,9 @@ def main(config):
 if __name__ == '__main__':   
     parser = argparse.ArgumentParser(description='Run CvFormer on ABIDE I for ASD classification')
 
-    parser.add_argument('--path_data', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/SSL_FC_matrix_GNN_data/ABIDEI/fmriprep',
+    parser.add_argument('--path_data', type=str,
                         help='Path to the dataset')
-    parser.add_argument('--path_save', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results',
+    parser.add_argument('--path_save', type=str,
                         help='Path to save results')
     parser.add_argument('--atlas', type=str, choices=['AICHA', 'AAL'], default='AICHA',
                         help='Atlas type to use')
@@ -467,8 +477,10 @@ if __name__ == '__main__':
         'path_save': args.path_save,
         'atlas': args.atlas,
         'shuffle': True,
+        'length': args.length,
         'epochs': args.epochs,
         'batch_size': args.batch_size,
+        'warm_up_epochs': args.warm_up_epochs,
         'num_classes': args.num_classes,
         'save_models': args.save_models,
         'save_results': args.save_results,
@@ -481,6 +493,7 @@ if __name__ == '__main__':
     config['model_config']['num_layers'] = 4
     config['model_config']['num_classes'] = 2
     config['model_config']['patch_proj'] = config['length']
+    config['model_config']['length'] = config['length']
     if config['atlas'] == 'AAL':
         config['lr'] = 4e-5
         config['contrastive_epochs'] = 5

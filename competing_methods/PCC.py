@@ -30,19 +30,19 @@ def main(config):
      
     
     for i,data in enumerate(test_data1):
-        data = test_augment_PCC(data, config['test_lengths'], config['num_test_winds'])
+        data = test_augment_PCC(data, config['test_winds'], config['num_test_winds'])
         test_data1[i] = data
         
     for i,data in enumerate(test_data2):
-        data = test_augment_PCC(data, config['test_lengths'], config['num_test_winds'])
+        data = test_augment_PCC(data, config['test_winds'], config['num_test_winds'])
         test_data2[i] = data
         
     for i,data in enumerate(val_data1):
-        data = test_augment_PCC(data, config['test_lengths'], config['num_test_winds'])
+        data = test_augment_PCC(data, config['test_winds'], config['num_test_winds'])
         val_data1[i] = data
         
     for i,data in enumerate(val_data2):
-        data = test_augment_PCC(data, config['test_lengths'], config['num_test_winds'])
+        data = test_augment_PCC(data, config['test_winds'], config['num_test_winds'])
         val_data2[i] = data
     
     val_data1 = np.stack(val_data1)
@@ -54,10 +54,10 @@ def main(config):
     mean_accs_val = []
     std_accs_val = []
     corr_coeffs_val = []
-    num_real = int(val_data1.shape[1] / len(config['test_lengths']))
+    num_real = int(val_data1.shape[1] / len(config['test_winds']))
     print('PCC Validation')
-    for i in range (len(config['test_lengths'])):
-        for n in range(len(config['test_lengths'])):
+    for i in range (len(config['test_winds'])):
+        for n in range(len(config['test_winds'])):
             if n >= i:
                 accuracies = []
                 for j in range(num_real):
@@ -94,10 +94,10 @@ def main(config):
     mean_accs_test = []
     std_accs_test = []
     corr_coeffs_test = []
-    num_real = int(test_data1.shape[1] / len(config['test_lengths']))
+    num_real = int(test_data1.shape[1] / len(config['test_winds']))
     print('PCC Test')
-    for i in range (len(config['test_lengths'])):
-        for n in range(len(config['test_lengths'])):
+    for i in range (len(config['test_winds'])):
+        for n in range(len(config['test_winds'])):
             if n >= i:
                 accuracies = []
                 for j in range(num_real):
@@ -130,15 +130,16 @@ def main(config):
     results = {}
     results['val_result'] = [accuracies_val, mean_accs_val, std_accs_val, corr_coeffs_val]
     results['test_result'] = [accuracies_test, mean_accs_test, std_accs_test, corr_coeffs_test]
-    with open(os.path.join(config['path_save'],'results_HCP',config['atlas'],'HCP_PCC_results.pkl'), 'wb') as f:
-        pickle.dump(results,f)
+    if config['save_results']:
+        with open(os.path.join(config['path_save'],'results_HCP',config['atlas'],'HCP_PCC_results.pkl'), 'wb') as f:
+            pickle.dump(results,f)
 
 if __name__ == '__main__':   
     parser = argparse.ArgumentParser(description='Run PCC on HCP for subject fingerprinting')
 
-    parser.add_argument('--path_data', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/SSL_FC_matrix_GNN_data/HCP',
+    parser.add_argument('--path_data', type=str,
                         help='Path to the dataset')
-    parser.add_argument('--path_save', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results',
+    parser.add_argument('--path_save', type=str,
                         help='Path to save results')
     parser.add_argument('--atlas', type=str, choices=['AICHA', 'AAL'], default='AICHA',
                         help='Atlas type to use')
@@ -146,13 +147,15 @@ if __name__ == '__main__':
                         help='Lengths used for testing the model')
     parser.add_argument('--num_test_winds', type=int, default=10,
                         help='Number of tests per length to calculate confidence interval')
+    parser.add_argument('--save_results', action='store_true',
+                        help='Flag to save results')
 
     args = parser.parse_args()
 
     config = {
         'path_data': args.path_data,
         'path_save': args.path_save,
-        'atlas': 'AICHA',
+        'atlas': args.atlas,
         'test_winds': args.test_winds,
         'num_test_winds': args.num_test_winds,
         'save_results': args.save_results,

@@ -220,8 +220,8 @@ def main(config):
     
     
     if config['save_results']:
-        if not os.path.exists(config['path_save'],'results_HCP',config['atlas']):
-            os.mkdir(config['path_save'],'results_HCP',config['atlas'])   
+        if not os.path.exists(os.path.join(config['path_save'],'results_HCP',config['atlas'])):
+            os.makedirs(os.path.join(config['path_save'],'results_HCP',config['atlas']), exist_ok=True)   
         with open(os.path.join(config['path_save'],'results_HCP',config['atlas'],'HCP_VarCoNet_results.pkl'), 'wb') as f:
             pickle.dump(results,f)
     return results
@@ -230,9 +230,9 @@ def main(config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run VarCoNet on HCP for subject fingerprinting')
 
-    parser.add_argument('--path_data', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/SSL_FC_matrix_GNN_data/HCP',
+    parser.add_argument('--path_data', type=str,
                         help='Path to the dataset')
-    parser.add_argument('--path_save', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results',
+    parser.add_argument('--path_save', type=str,
                         help='Path to save results')
     parser.add_argument('--atlas', type=str, choices=['AICHA', 'AAL'], default='AICHA',
                         help='Atlas type to use')

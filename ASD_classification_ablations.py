@@ -4,15 +4,17 @@ import torch
 import torch.nn as nn
 from utils import InfoNCE
 from tqdm import tqdm
+import torch.nn.functional as F
 from torch.optim import Adam
 from utils import DualBranchContrast
 from pl_bolts.optimizers import LinearWarmupCosineAnnealingLR
-from model_scripts.VarCoNet import VarCoNet, VarCoNet_noCNN
+from model_scripts.VarCoNet import VarCoNet_noSSL, VarCoNet_noCNN
 from utils import ABIDEDataset
 import os
 from model_scripts.classifier import LREvaluator
 import pickle
 from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.metrics import roc_auc_score
 from utils import augment, removeDuplicates, test_augment_overlap
 import argparse
 
@@ -27,8 +29,21 @@ def train(x, encoder_model, contrast_model, optimizer):
     optimizer.step()
     return loss.item(), z1.shape[1]
 
+def train_supervised(x, y, encoder_model, optimizer, loss_func, num_classes):
+    encoder_model.train()
+    optimizer.zero_grad()
+    z = encoder_model(x)
+    loss = loss_func(z, F.one_hot(y, num_classes=num_classes).float())
+    loss.backward()
+    optimizer.step()
+    z = z[:,-1].detach().cpu().numpy()
+    y = y.to(torch.device("cpu")).numpy()
+    auc_score = roc_auc_score(y, z)
+    return loss.item(),auc_score
 
-def test(encoder_model, train_loader, val_loader, test_loader, min_length, max_length, num_classes, device, num_epochs, lr):
+
+def test(encoder_model, train_loader, val_loader, test_loader,
+         min_length, max_length, num_classes, device, num_epochs, lr):
     encoder_model.eval()
     with torch.no_grad():
         outputs_train = []
@@ -68,13 +83,32 @@ def test(encoder_model, train_loader, val_loader, test_loader, min_length, max_l
         outputs_test = torch.cat(outputs_test, dim=0).clone().detach()
         y_test = torch.cat(y_test,dim=0).to(device)
         
-    result,linear_state_dict = LREvaluator(num_epochs = num_epochs,learning_rate=lr).evaluate(encoder_model, outputs_train, y_train, outputs_val, y_val, outputs_test, y_test, num_classes, device)
+    result,linear_state_dict = LREvaluator(num_epochs=num_epochs,learning_rate=lr).evaluate(encoder_model, outputs_train, y_train, outputs_val, y_val, outputs_test, y_test, num_classes, device)
                 
     return result,linear_state_dict
 
 
+def test_supervised(encoder_model, test_data_loader, batch_size, loss_func, num_classes, device):
+    encoder_model.eval()
+    with torch.no_grad():
+        zs = []
+        ys = []
+        for (x,y) in test_data_loader:
+            zs.append(encoder_model(x.to(device)))
+            ys.append(y)
+        z = torch.cat(zs,dim=0)
+        y = torch.cat(ys,dim=0)
+        loss = loss_func(z, F.one_hot(y, num_classes=num_classes).float().to(device))
+        z = z[:,-1].cpu().numpy()
+        y = y.numpy()
+        auc_score = roc_auc_score(y, z)
+                   
+    return loss.item(), auc_score, z, y
+
 def main(config):
     results = {}
+    results['no_SSL'] = {}
+    results['no_CNN'] = {}
     for atlas in ['AAL', 'AICHA']:
         with open(f'best_params_VarCoNet_{atlas}.pkl', 'rb') as f:
             best_params = pickle.load(f)
@@ -160,14 +194,19 @@ def main(config):
                 y_test = y[test_index]
                 names_train = [names[n] for n in train_index]
                 names_test = [names[n] for n in test_index]
-                train_data, val_data, y_train, y_val, train_idx, val_idx = train_test_split(train_data, y_train, np.arange(len(train_data)), test_size=0.15, random_state=42, stratify=y_train)
+                train_data, val_data, y_train, y_val, train_idx, val_idx = train_test_split(train_data,
+                                                                                            y_train, 
+                                                                                            np.arange(len(train_data)), 
+                                                                                            test_size=0.15, 
+                                                                                            random_state=42, 
+                                                                                            stratify=y_train)
                 names_val = [names_train[n] for n in val_idx]
                 names_train = [names_train[n] for n in train_idx]
                 train_data = train_DATA + train_data
                 y_train = np.concatenate((Y_train, y_train))
                 names_train = names_duplicate + names_train
                 train_dataset = ABIDEDataset(train_data, y_train)
-                train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=config['shuffle'])
+                train_loader = DataLoader(train_dataset, batch_size=config['batch_size'],shuffle=config['shuffle'])
                 val_dataset = ABIDEDataset(val_data, y_val)
                 val_loader = DataLoader(val_dataset, batch_size=config['batch_size'])
                 test_dataset = ABIDEDataset(test_data, y_test)
@@ -196,11 +235,10 @@ def main(config):
                         for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
                             sample_inds = removeDuplicates(names_train,sample_inds)
                             batch_list = [train_data[i] for i in sample_inds]
-                            batch_loader = DataLoader(batch_list, batch_size=len(batch_list), num_workers=4)
+                            batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
                             batch_data = next(iter(batch_loader))
                             batch_data = augment(batch_data,train_length_limits,max_length,device)
-                            loss,input_dim = train(batch_data,encoder_model,contrast_model,
-                                                   optimizer)
+                            loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
                             total_loss += loss
                             batch_count += 1
                         scheduler.step()
@@ -222,7 +260,7 @@ def main(config):
                 test_result_all.append(test_result)
                 min_val_loss_epochs.append(min_val_loss_epoch)
         
-        
+        results['no_CNN'][atlas] = {}
         results['no_CNN'][atlas]['losses'] = losses_all
         results['no_CNN'][atlas]['epoch_results'] = test_result_all
         results['no_CNN'][atlas]['min_val_loss_epoch'] = min_val_loss_epochs
@@ -255,14 +293,21 @@ def main(config):
                 y_test = y[test_index]
                 names_train = [names[n] for n in train_index]
                 names_test = [names[n] for n in test_index]
-                train_data, val_data, y_train, y_val, train_idx, val_idx = train_test_split(train_data, y_train, np.arange(len(train_data)), test_size=0.15, random_state=42, stratify=y_train)
+                train_data, val_data, y_train, y_val, train_idx, val_idx = train_test_split(train_data,
+                                                                                            y_train,
+                                                                                            np.arange(len(train_data)),
+                                                                                            test_size=0.15,
+                                                                                            random_state=42,
+                                                                                            stratify=y_train)
                 names_val = [names_train[n] for n in val_idx]
                 names_train = [names_train[n] for n in train_idx]
                 train_data = train_DATA + train_data
                 y_train = np.concatenate((Y_train, y_train))
                 names_train = names_duplicate + names_train
                 train_dataset = ABIDEDataset(train_data, y_train)
-                train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle = config['shuffle'])
+                train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], 
+                                          shuffle=config['shuffle'],
+                                          drop_last=True)
                 val_dataset = ABIDEDataset(val_data, y_val)
                 val_loader = DataLoader(val_dataset, batch_size=config['batch_size'])
                 test_dataset = ABIDEDataset(test_data, y_test)
@@ -272,7 +317,7 @@ def main(config):
                 names_test_all.append(names_test)
                 roi_num = test_data[0].shape[1]
                 
-                encoder_model = VarCoNet(model_config, roi_num).to(device)
+                encoder_model = VarCoNet_noSSL(model_config, roi_num, config['num_classes']).to(device)
                 
                 loss_func = nn.BCELoss()
                 optimizer = Adam(encoder_model.parameters(), lr=config['lr'])
@@ -299,13 +344,15 @@ def main(config):
                         total_auc = 0.0
                         batch_count = 0                          
                         for batch_idx, (batch_data, batch_labels) in enumerate(train_loader):            
-                            loss,auc = train(batch_data.to(device), batch_labels.to(device), encoder_model, optimizer, loss_func)
+                            loss,auc = train_supervised(batch_data.to(device),batch_labels.to(device),
+                                             encoder_model,optimizer,loss_func,config['num_classes'])
                             total_loss += loss
                             total_auc += auc
                             batch_count += 1
                         scheduler.step()
-                        val_loss,val_auc,val_prob,y_val = test(encoder_model,val_loader,
-                                                               config['batch_size'],loss_func,device)
+                        val_loss,val_auc,val_prob,y_val = test_supervised(encoder_model,val_loader,
+                                                               config['batch_size'],loss_func,
+                                                               config['num_classes'],device)
                                 
                         average_loss = total_loss / batch_count if batch_count > 0 else float('nan')   
                         average_auc = total_auc / batch_count if batch_count > 0 else float('nan') 
@@ -323,8 +370,9 @@ def main(config):
                         })
                         pbar.update()  
 
-                        test_loss,test_auc,test_prob,y_test = test(encoder_model,test_loader,
-                                                                   config['batch_size'],loss_func,device)
+                        test_loss,test_auc,test_prob,y_test = test_supervised(encoder_model,test_loader,
+                                                                   config['batch_size'],loss_func,
+                                                                   config['num_classes'],device)
                         test_losses.append(test_loss)
                         test_aucs.append(test_auc)
                         test_probs.append(test_prob)
@@ -339,7 +387,7 @@ def main(config):
                 test_probs_all.append(test_probs)
                 y_val_all.append(y_vals)
                 y_test_all.append(y_tests)
-                
+        results['no_SSL'][atlas] = {}
         results['no_SSL'][atlas]['losses'] = train_losses
         results['no_SSL'][atlas]['val_losses'] = val_losses_all
         results['no_SSL'][atlas]['test_losses'] = test_losses_all
@@ -363,17 +411,15 @@ def main(config):
 if __name__ == '__main__':   
     parser = argparse.ArgumentParser(description='Run VarCoNet ablations on ABIDE I for ASD classification')
 
-    parser.add_argument('--path_data', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/SSL_FC_matrix_GNN_data/ABIDEI/fmriprep',
+    parser.add_argument('--path_data', type=str,
                         help='Path to the dataset')
-    parser.add_argument('--path_save', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results',
+    parser.add_argument('--path_save', type=str,
                         help='Path to save results')
-    parser.add_argument('--atlas', type=str, choices=['AICHA', 'AAL'], default='AICHA',
-                        help='Atlas type to use')
     parser.add_argument('--device', type=str, default='cuda:0',
                         help='Device to use for training')
     parser.add_argument('--min_length', type=int, default=80,
                         help='Minimum length for augmentation')
-    parser.add_argument('--epochs', type=int, default=100,
+    parser.add_argument('--epochs', type=int, default=50,
                         help='Number of epochs')
     parser.add_argument('--warm_up_epochs', type=int, default=10,
                         help='Number of warm up epochs for the lr scheduler')
@@ -383,8 +429,6 @@ if __name__ == '__main__':
                         help='Learning rate for the linear classification layer')
     parser.add_argument('--num_classes', type=int, default=2,
                         help='Number of classes for the classification')
-    parser.add_argument('--save_models', action='store_true',
-                        help='Flag to save trained models')
     parser.add_argument('--save_results', action='store_true',
                         help='Flag to save results')
 
@@ -393,7 +437,6 @@ if __name__ == '__main__':
     config = {
         'path_data': args.path_data,
         'path_save': args.path_save,
-        'atlas': args.atlas,
         'min_length': args.min_length,
         'shuffle': True,
         'epochs': args.epochs,
@@ -401,7 +444,6 @@ if __name__ == '__main__':
         'epochs_cls': args.epochs_cls,
         'lr_cls': args.lr_cls,
         'num_classes': args.num_classes,
-        'save_models': args.save_models,
         'save_results': args.save_results,
         'device': args.device,
         'model_config': {}

@@ -184,21 +184,21 @@ class CrossViewModel(nn.Module):
         super(CrossViewModel, self).__init__()
         self.transformer1 = TransformerBlock(model_config['d_model1'], 
                                              model_config['num_layers1'],
-                                             model_config['max_length'])
+                                             model_config['length'])
         self.transformer2 = TransformerBlock(model_config['d_model2'], 
                                              model_config['num_layers2'],
-                                             model_config['max_length'])
+                                             model_config['length'])
         self.transformer3 = TransformerBlock(model_config['d_model1'], 
                                              model_config['num_layers'],
-                                             model_config['max_length'])
+                                             model_config['length'])
         self.transformer4 = TransformerBlock(model_config['d_model2'], 
                                              model_config['num_layers'],
-                                             model_config['max_length'])
+                                             model_config['length'])
         self.linear_layer = nn.Linear(model_config['window_size']**2, model_config['patch_proj'])
-        self.classifier = nn.Sequential(nn.Linear(2*model_config['max_length'], 
+        self.classifier = nn.Sequential(nn.Linear(2*model_config['length'], 
                                                   model_config['num_classes']),nn.Softmax(dim=-1))
-        self.cls_token1 = torch.nn.Parameter(torch.randn(1, model_config['max_length'], 1))
-        self.cls_token2 = torch.nn.Parameter(torch.randn(1, model_config['max_length'], 1))
+        self.cls_token1 = torch.nn.Parameter(torch.randn(1, model_config['length'], 1))
+        self.cls_token2 = torch.nn.Parameter(torch.randn(1, model_config['length'], 1))
         self.linear1 = nn.Sequential(nn.Linear(model_config['d_model1']-1, 128), nn.Linear(128, 64))
         self.linear2 = nn.Sequential(nn.Linear(model_config['d_model2']-1, 128), nn.Linear(128, 64))
 

@@ -5,14 +5,11 @@ import os
 from sklearn.metrics import f1_score,roc_curve
 import pandas as pd
 import seaborn as sns
-from pathlib import Path
 
-path_results = r'/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results' #path where results have been saved
+path_results = r'...' #here, enter the path where results have been saved
 
-path = Path(os.get_cwd())
-parent = path.parent
-if not os.path.exists(os.path.join(parent,"paper_plots")):
-    os.mkdir(os.path.join(parent,"paper_plots"))
+if not os.path.exists(os.path.join(path_results,"plots")):
+    os.mkdir(os.path.join(path_results,"plots"))
     
 with open(os.path.join(path_results,'results_ABIDEI','AICHA','ABIDEI_VarCoNet_results.pkl'), 'rb') as f:
     ASD_result_VarCoNet_aicha = pickle.load(f)
@@ -52,6 +49,8 @@ test_probs = ASD_result_VarCoNet_ablations['no_SSL']['AAL']['test_probs']
 y_tests = ASD_result_VarCoNet_ablations['no_SSL']['AAL']['y_test']
 min_indices = np.argmin(val_losses, axis=1)
 
+repeats, epochs = val_losses.shape
+
 SL_AAL_test_f1 = np.zeros((len(val_losses),))
 for i in range(len(val_losses)):
     test_prob = test_probs[i][min_indices[i]]
@@ -68,9 +67,9 @@ SL_AAL_test_losses = np.take_along_axis(test_losses, min_indices[:, None], axis=
 SL_AAL_test_aucs = np.take_along_axis(test_aucs, min_indices[:, None], axis=1).squeeze() 
 
 
-test_losses = np.zeros((100,50))   
-test_aucs = np.zeros((100,50))  
-test_f1 = np.zeros((100,50))  
+test_losses = np.zeros((repeats,epochs))   
+test_aucs = np.zeros((repeats,epochs))  
+test_f1 = np.zeros((repeats,epochs))  
 for i,test in enumerate(ASD_result_VarCoNet_aicha['epoch_results']):
     for j,test1 in enumerate(test):
         val_losses[i,j] = test1['best_val_loss']
@@ -93,9 +92,9 @@ aicha_test_aucs = np.take_along_axis(test_aucs, min_indices[:, None], axis=1).sq
 aicha_test_f1 = np.take_along_axis(test_f1, min_indices[:, None], axis=1).squeeze() 
 
 
-test_losses = np.zeros((100,50))   
-test_aucs = np.zeros((100,50))  
-test_f1 = np.zeros((100,50))  
+test_losses = np.zeros((repeats,epochs))   
+test_aucs = np.zeros((repeats,epochs))  
+test_f1 = np.zeros((repeats,epochs))  
 for i,test in enumerate(ASD_result_VarCoNet_aal['epoch_results']):
     for j,test1 in enumerate(test):
         val_losses[i,j] = test1['best_val_loss']
@@ -118,9 +117,9 @@ aal_test_aucs = np.take_along_axis(test_aucs, min_indices[:, None], axis=1).sque
 aal_test_f1 = np.take_along_axis(test_f1, min_indices[:, None], axis=1).squeeze() 
 
 
-test_losses = np.zeros((100,50))   
-test_aucs = np.zeros((100,50))  
-test_f1 = np.zeros((100,50))  
+test_losses = np.zeros((repeats,epochs))   
+test_aucs = np.zeros((repeats,epochs))  
+test_f1 = np.zeros((repeats,epochs))  
 for i,test in enumerate(ASD_result_VarCoNet_ablations['no_CNN']['AICHA']['epoch_results']):
     for j,test1 in enumerate(test):
         val_losses[i,j] = test1['best_val_loss']
@@ -143,9 +142,9 @@ noCNN_AICHA_test_aucs = np.take_along_axis(test_aucs, min_indices[:, None], axis
 noCNN_AICHA_test_f1 = np.take_along_axis(test_f1, min_indices[:, None], axis=1).squeeze() 
 
 
-test_losses = np.zeros((100,50))   
-test_aucs = np.zeros((100,50))  
-test_f1 = np.zeros((100,50))  
+test_losses = np.zeros((repeats,epochs))   
+test_aucs = np.zeros((repeats,epochs))  
+test_f1 = np.zeros((repeats,epochs))  
 for i,test in enumerate(ASD_result_VarCoNet_ablations['no_CNN']['AAL']['epoch_results']):
     for j,test1 in enumerate(test):
         val_losses[i,j] = test1['best_val_loss']
@@ -172,10 +171,10 @@ plt.figure()
 y = np.concatenate((aal_test_losses, aicha_test_losses,
                     aal_test_aucs, aicha_test_aucs,
                     aal_test_f1, aicha_test_f1), axis=0)
-x = np.concatenate((np.full((200,), 'loss'),np.full((200,), 'AUC'),np.full((200,), 'F1')),axis=0)
-hue = np.concatenate((np.full((100,), 'AAL'),np.full((100,), 'AICHA'),
-                      np.full((100,), 'AAL'),np.full((100,), 'AICHA'),
-                      np.full((100,), 'AAL'),np.full((100,), 'AICHA')),axis=0)
+x = np.concatenate((np.full((2*repeats,), 'loss'),np.full((2*repeats,), 'AUC'),np.full((2*repeats,), 'F1')),axis=0)
+hue = np.concatenate((np.full((repeats,), 'AAL'),np.full((repeats,), 'AICHA'),
+                      np.full((repeats,), 'AAL'),np.full((repeats,), 'AICHA'),
+                      np.full((repeats,), 'AAL'),np.full((repeats,), 'AICHA')),axis=0)
 
 d = {'Score': y, 'Atlas': hue, 'Metric': x}
 df = pd.DataFrame(data=d)
@@ -186,7 +185,7 @@ plt.xticks(fontsize=15)
 plt.yticks(fontsize=15)
 plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
-plt.savefig(os.path.join(parent,"paper_plots","ABIDE_atlas.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots","ABIDE_atlas.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -194,10 +193,10 @@ plt.figure()
 y = np.concatenate((noCNN_AICHA_test_losses, aicha_test_losses,
                     noCNN_AICHA_test_aucs, aicha_test_aucs,
                     noCNN_AICHA_test_f1, aicha_test_f1), axis=0)
-x = np.concatenate((np.full((200,), 'loss'),np.full((200,), 'AUC'),np.full((200,), 'F1')),axis=0)
-hue = np.concatenate((np.full((100,), 'No'),np.full((100,), 'Yes'),
-                      np.full((100,), 'No'),np.full((100,), 'Yes'),
-                      np.full((100,), 'No'),np.full((100,), 'Yes')),axis=0)
+x = np.concatenate((np.full((2*repeats,), 'loss'),np.full((2*repeats,), 'AUC'),np.full((2*repeats,), 'F1')),axis=0)
+hue = np.concatenate((np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
+                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
+                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes')),axis=0)
 
 d = {'Score': y, 'With CNN': hue, 'Metric': x}
 df = pd.DataFrame(data=d)
@@ -208,7 +207,7 @@ plt.xticks(fontsize=15)
 plt.yticks(fontsize=15)
 plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
-plt.savefig(os.path.join(parent,"paper_plots","ABIDE_noCNN_AICHA.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots","ABIDE_noCNN_AICHA.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -216,10 +215,10 @@ plt.figure()
 y = np.concatenate((noCNN_AAL_test_losses, aicha_test_losses,
                     noCNN_AAL_test_aucs, aicha_test_aucs,
                     noCNN_AAL_test_f1, aicha_test_f1), axis=0)
-x = np.concatenate((np.full((200,), 'loss'),np.full((200,), 'AUC'),np.full((200,), 'F1')),axis=0)
-hue = np.concatenate((np.full((100,), 'No'),np.full((100,), 'Yes'),
-                      np.full((100,), 'No'),np.full((100,), 'Yes'),
-                      np.full((100,), 'No'),np.full((100,), 'Yes')),axis=0)
+x = np.concatenate((np.full((2*repeats,), 'loss'),np.full((2*repeats,), 'AUC'),np.full((2*repeats,), 'F1')),axis=0)
+hue = np.concatenate((np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
+                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
+                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes')),axis=0)
 
 d = {'Score': y, 'With CNN': hue, 'Metric': x}
 df = pd.DataFrame(data=d)
@@ -230,7 +229,7 @@ plt.xticks(fontsize=15)
 plt.yticks(fontsize=15)
 plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
-plt.savefig(os.path.join(parent,"paper_plots","ABIDE_noCNN_AAL.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots","ABIDE_noCNN_AAL.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -238,10 +237,10 @@ plt.figure()
 y = np.concatenate((SL_AICHA_test_losses, aicha_test_losses,
                     SL_AICHA_test_aucs, aicha_test_aucs,
                     SL_AICHA_test_f1, aicha_test_f1), axis=0)
-x = np.concatenate((np.full((200,), 'loss'),np.full((200,), 'AUC'),np.full((200,), 'F1')),axis=0)
-hue = np.concatenate((np.full((100,), 'No'),np.full((100,), 'Yes'),
-                      np.full((100,), 'No'),np.full((100,), 'Yes'),
-                      np.full((100,), 'No'),np.full((100,), 'Yes')),axis=0)
+x = np.concatenate((np.full((2*repeats,), 'loss'),np.full((2*repeats,), 'AUC'),np.full((2*repeats,), 'F1')),axis=0)
+hue = np.concatenate((np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
+                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
+                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes')),axis=0)
 
 d = {'Score': y, 'SSL': hue, 'Metric': x}
 df = pd.DataFrame(data=d)
@@ -252,7 +251,7 @@ plt.xticks(fontsize=15)
 plt.yticks(fontsize=15)
 plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
-plt.savefig(os.path.join(parent,"paper_plots","ABIDE_SSL_AICHA.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots","ABIDE_SSL_AICHA.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -260,10 +259,10 @@ plt.figure()
 y = np.concatenate((SL_AAL_test_losses, aal_test_losses,
                     SL_AAL_test_aucs, aal_test_aucs,
                     SL_AAL_test_f1, aal_test_f1), axis=0)
-x = np.concatenate((np.full((200,), 'loss'),np.full((200,), 'AUC'),np.full((200,), 'F1')),axis=0)
-hue = np.concatenate((np.full((100,), 'No'),np.full((100,), 'Yes'),
-                      np.full((100,), 'No'),np.full((100,), 'Yes'),
-                      np.full((100,), 'No'),np.full((100,), 'Yes')),axis=0)
+x = np.concatenate((np.full((2*repeats,), 'loss'),np.full((2*repeats,), 'AUC'),np.full((2*repeats,), 'F1')),axis=0)
+hue = np.concatenate((np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
+                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
+                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes')),axis=0)
 
 d = {'Score': y, 'SSL': hue, 'Metric': x}
 df = pd.DataFrame(data=d)
@@ -274,7 +273,7 @@ plt.xticks(fontsize=15)
 plt.yticks(fontsize=15)
 plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
-plt.savefig(os.path.join(parent,"paper_plots","ABIDE_SSL_AAL.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots","ABIDE_SSL_AAL.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -300,18 +299,19 @@ AAL_noCNN_1_1 = fingerprinting_result_VarCoNet_ablations['AAL'][0][3]
 AAL_noCNN_1_2 = fingerprinting_result_VarCoNet_ablations['AAL'][0][4]
 AAL_noCNN_2_2 = fingerprinting_result_VarCoNet_ablations['AAL'][0][5]
 
+num_test_winds = len(AAL_0_0)
 
 plt.figure()
 y = np.concatenate((AAL_noCNN_0_0, AAL_noCNN_0_1, AAL_noCNN_0_2,
                     AAL_noCNN_1_1, AAL_noCNN_1_2, AAL_noCNN_2_2,
                     AAL_0_0, AAL_0_1, AAL_0_2, AAL_1_1, AAL_1_2, AAL_2_2), axis=0)
-x = np.concatenate((np.full((10,), '2-2'),np.full((10,), '2-5'),
-                    np.full((10,), '2-8'),np.full((10,), '5-5'),
-                    np.full((10,), '5-8'),np.full((10,), '8-8'),
-                    np.full((10,), '2-2'),np.full((10,), '2-5'),
-                    np.full((10,), '2-8'),np.full((10,), '5-5'),
-                    np.full((10,), '5-8'),np.full((10,), '8-8'),),axis=0)
-hue = np.concatenate((np.full((60,), 'No'), np.full((60,), 'Yes')),axis=0)
+x = np.concatenate((np.full((num_test_winds,), '2-2'),np.full((num_test_winds,), '2-5'),
+                    np.full((num_test_winds,), '2-8'),np.full((num_test_winds,), '5-5'),
+                    np.full((num_test_winds,), '5-8'),np.full((num_test_winds,), '8-8'),
+                    np.full((num_test_winds,), '2-2'),np.full((num_test_winds,), '2-5'),
+                    np.full((num_test_winds,), '2-8'),np.full((num_test_winds,), '5-5'),
+                    np.full((num_test_winds,), '5-8'),np.full((num_test_winds,), '8-8'),),axis=0)
+hue = np.concatenate((np.full((6*num_test_winds,), 'No'), np.full((6*num_test_winds,), 'Yes')),axis=0)
 
 d = {'Fingerprinting Accuracy': y, 'With CNN': hue, 'Duration Combinations (mins)': x}
 df = pd.DataFrame(data=d)
@@ -322,7 +322,7 @@ plt.xticks(fontsize=15)
 plt.yticks(fontsize=15)
 plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
-plt.savefig(os.path.join(parent,"paper_plots","HCP_noCNN_AAL.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots","HCP_noCNN_AAL.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -345,13 +345,13 @@ plt.figure()
 y = np.concatenate((AICHA_noCNN_0_0, AICHA_noCNN_0_1, AICHA_noCNN_0_2,
                     AICHA_noCNN_1_1, AICHA_noCNN_1_2, AICHA_noCNN_2_2,
                     AICHA_0_0, AICHA_0_1, AICHA_0_2, AICHA_1_1, AICHA_1_2, AICHA_2_2), axis=0)
-x = np.concatenate((np.full((10,), '2-2'),np.full((10,), '2-5'),
-                    np.full((10,), '2-8'),np.full((10,), '5-5'),
-                    np.full((10,), '5-8'),np.full((10,), '8-8'),
-                    np.full((10,), '2-2'),np.full((10,), '2-5'),
-                    np.full((10,), '2-8'),np.full((10,), '5-5'),
-                    np.full((10,), '5-8'),np.full((10,), '8-8'),),axis=0)
-hue = np.concatenate((np.full((60,), 'No'), np.full((60,), 'Yes')),axis=0)
+x = np.concatenate((np.full((num_test_winds,), '2-2'),np.full((num_test_winds,), '2-5'),
+                    np.full((num_test_winds,), '2-8'),np.full((num_test_winds,), '5-5'),
+                    np.full((num_test_winds,), '5-8'),np.full((num_test_winds,), '8-8'),
+                    np.full((num_test_winds,), '2-2'),np.full((num_test_winds,), '2-5'),
+                    np.full((num_test_winds,), '2-8'),np.full((num_test_winds,), '5-5'),
+                    np.full((num_test_winds,), '5-8'),np.full((num_test_winds,), '8-8'),),axis=0)
+hue = np.concatenate((np.full((6*num_test_winds,), 'No'), np.full((6*num_test_winds,), 'Yes')),axis=0)
 
 d = {'Fingerprinting Accuracy': y, 'With CNN': hue, 'Duration Combinations (mins)': x}
 df = pd.DataFrame(data=d)
@@ -362,20 +362,20 @@ plt.xticks(fontsize=15)
 plt.yticks(fontsize=15)
 plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
-plt.savefig(os.path.join(parent,"paper_plots","HCP_noCNN_AICHA.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots","HCP_noCNN_AICHA.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
 plt.figure()
 y = np.concatenate((AAL_0_0, AAL_0_1, AAL_0_2, AAL_1_1, AAL_1_2, AAL_2_2,
                     AICHA_0_0, AICHA_0_1, AICHA_0_2, AICHA_1_1, AICHA_1_2, AICHA_2_2), axis=0)
-x = np.concatenate((np.full((10,), '2-2'),np.full((10,), '2-5'),
-                    np.full((10,), '2-8'),np.full((10,), '5-5'),
-                    np.full((10,), '5-8'),np.full((10,), '8-8'),
-                    np.full((10,), '2-2'),np.full((10,), '2-5'),
-                    np.full((10,), '2-8'),np.full((10,), '5-5'),
-                    np.full((10,), '5-8'),np.full((10,), '8-8'),),axis=0)
-hue = np.concatenate((np.full((60,), 'AAL'), np.full((60,), 'AICHA')),axis=0)
+x = np.concatenate((np.full((num_test_winds,), '2-2'),np.full((num_test_winds,), '2-5'),
+                    np.full((num_test_winds,), '2-8'),np.full((num_test_winds,), '5-5'),
+                    np.full((num_test_winds,), '5-8'),np.full((num_test_winds,), '8-8'),
+                    np.full((num_test_winds,), '2-2'),np.full((num_test_winds,), '2-5'),
+                    np.full((num_test_winds,), '2-8'),np.full((num_test_winds,), '5-5'),
+                    np.full((num_test_winds,), '5-8'),np.full((num_test_winds,), '8-8'),),axis=0)
+hue = np.concatenate((np.full((6*num_test_winds,), 'AAL'), np.full((6*num_test_winds,), 'AICHA')),axis=0)
 
 d = {'Fingerprinting Accuracy': y, 'Atlas': hue, 'Duration Combinations (mins)': x}
 df = pd.DataFrame(data=d)
@@ -386,6 +386,6 @@ plt.xticks(fontsize=15)
 plt.yticks(fontsize=15)
 plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
-plt.savefig(os.path.join(parent,"paper_plots","HCP_atlas.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots","HCP_atlas.png"), dpi=600, bbox_inches='tight')
 plt.show()
 

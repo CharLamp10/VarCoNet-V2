@@ -5,16 +5,13 @@ import plotly.graph_objects as go
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
-from pathlib import Path
 
 
-atlas = 'AICHA'
-path_results = r'/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results' #path where results have been saved
+path_results = r'...' #here, enter the path where results have been saved
+atlas = 'AAL'         #choose atlas (AICHA, AAL)
 
-path = Path(os.getcwd())
-parent = path.parent
-if not os.path.exists(os.path.join(parent,"paper_plots")):
-    os.mkdir(os.path.join(parent,"paper_plots"))
+if not os.path.exists(os.path.join(path_results,"plots")):
+    os.mkdir(os.path.join(path_results,"plots"))
 
 with open(os.path.join(path_results, 'results_HCP', atlas, 'HCP_VarCoNet_results.pkl'), 'rb') as f:
     test_result_VarCoNet = pickle.load(f)
@@ -51,7 +48,7 @@ fig.update_layout(
     ),
 )
 
-fig.write_image(os.path.join(parent,'paper_plots','HCP_training_loss_' + atlas + '.png'), scale=8, engine = "orca")
+fig.write_image(os.path.join(path_results,'plots','HCP_training_loss_' + atlas + '.png'), scale=8, engine = "orca")
 
 
 VarCoNet_0_0 = test_result_VarCoNet['test_result'][0][0]
@@ -116,5 +113,5 @@ plt.yticks(fontsize=20)
 plt.ylim(0, 1)
 plt.tight_layout()
 
-plt.savefig(os.path.join(parent,'paper_plots','fingerprinting_comparison_boxplot_' + atlas + '.png'), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,'plots','fingerprinting_comparison_boxplot_' + atlas + '.png'), dpi=600, bbox_inches='tight')
 plt.show()

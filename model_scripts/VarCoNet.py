@@ -108,3 +108,21 @@ class VarCoNet_noCNN(nn.Module):
         x = self.extract(x)
         x = upper_triangular_cosine_similarity(x)
         return x 
+    
+class VarCoNet_noSSL(nn.Module):
+
+    def __init__(self, model_config, roi_num, num_classes):
+        super().__init__()
+
+        self.extract = Transformer(
+                d_model=roi_num,
+                n_layers=model_config['layers'],n_heads=model_config['n_heads'],
+                dim_feedforward=model_config['dim_feedforward'],
+                max_len=model_config['max_length'])
+        self.linear = nn.Sequential(nn.Linear(int(roi_num*(roi_num-1)/2),
+                                              num_classes),nn.Softmax(dim=-1))
+    def forward(self, x):
+        x = self.extract(x)
+        x = upper_triangular_cosine_similarity(x)
+        x = self.linear(x)
+        return x 

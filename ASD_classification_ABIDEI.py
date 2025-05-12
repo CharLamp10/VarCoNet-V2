@@ -28,7 +28,8 @@ def train(x, encoder_model, contrast_model, optimizer):
     return loss.item(), z1.shape[1]
 
 
-def test(encoder_model, train_loader, val_loader, test_loader, min_length, max_length, num_classes, device, num_epochs, lr):
+def test(encoder_model, train_loader, val_loader, test_loader,
+         min_length, max_length, num_classes, device, num_epochs, lr):
     encoder_model.eval()
     with torch.no_grad():
         outputs_train = []
@@ -68,7 +69,7 @@ def test(encoder_model, train_loader, val_loader, test_loader, min_length, max_l
         outputs_test = torch.cat(outputs_test, dim=0).clone().detach()
         y_test = torch.cat(y_test,dim=0).to(device)
         
-    result,linear_state_dict = LREvaluator(num_epochs = num_epochs,learning_rate=lr).evaluate(encoder_model, outputs_train, y_train, outputs_val, y_val, outputs_test, y_test, num_classes, device)
+    result,linear_state_dict = LREvaluator(num_epochs=num_epochs,learning_rate=lr).evaluate(encoder_model, outputs_train, y_train, outputs_val, y_val, outputs_test, y_test, num_classes, device)
                 
     return result,linear_state_dict
 
@@ -152,7 +153,12 @@ def main(config):
             y_test = y[test_index]
             names_train = [names[n] for n in train_index]
             names_test = [names[n] for n in test_index]
-            train_data, val_data, y_train, y_val, train_idx, val_idx = train_test_split(train_data, y_train, np.arange(len(train_data)), test_size=0.15, random_state=42, stratify=y_train)
+            train_data, val_data, y_train, y_val, train_idx, val_idx = train_test_split(train_data,
+                                                                                        y_train,
+                                                                                        np.arange(len(train_data)),
+                                                                                        test_size=0.15,
+                                                                                        random_state=42,
+                                                                                        stratify=y_train)
             names_val = [names_train[n] for n in val_idx]
             names_train = [names_train[n] for n in train_idx]
             train_data = train_DATA + train_data
@@ -231,7 +237,12 @@ def main(config):
     names_train_ext_all = []
     names_val_ext_all = []
     for i in range(10):
-        train_data, val_data, y_train, y_val, train_idx, val_idx = train_test_split(data, y, np.arange(len(data)), test_size=0.1, random_state=42+i, stratify=y)
+        train_data, val_data, y_train, y_val, train_idx, val_idx = train_test_split(data,
+                                                                                    y,
+                                                                                    np.arange(len(data)),
+                                                                                    test_size=0.1,
+                                                                                    random_state=42+i, 
+                                                                                    stratify=y)
         names_val = [names[n] for n in val_idx]
         names_train = [names[n] for n in train_idx]
         train_data = train_DATA + train_data
@@ -327,9 +338,9 @@ def main(config):
 if __name__ == '__main__':   
     parser = argparse.ArgumentParser(description='Run VarCoNet on ABIDE I for ASD classification')
 
-    parser.add_argument('--path_data', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/SSL_FC_matrix_GNN_data/ABIDEI/fmriprep',
+    parser.add_argument('--path_data', type=str,
                         help='Path to the dataset')
-    parser.add_argument('--path_save', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results',
+    parser.add_argument('--path_save', type=str,
                         help='Path to save results')
     parser.add_argument('--atlas', type=str, choices=['AICHA', 'AAL'], default='AICHA',
                         help='Atlas type to use')
@@ -337,7 +348,7 @@ if __name__ == '__main__':
                         help='Device to use for training')
     parser.add_argument('--min_length', type=int, default=80,
                         help='Minimum length for augmentation')
-    parser.add_argument('--epochs', type=int, default=100,
+    parser.add_argument('--epochs', type=int, default=50,
                         help='Number of epochs')
     parser.add_argument('--warm_up_epochs', type=int, default=10,
                         help='Number of warm up epochs for the lr scheduler')
@@ -351,8 +362,6 @@ if __name__ == '__main__':
                         help='Flag to save trained models')
     parser.add_argument('--save_results', action='store_true',
                         help='Flag to save results')
-    parser.add_argument('--load_prev_model', action='store_true',
-                        help='Flag to load a previously trained model')
 
     args = parser.parse_args()
 
@@ -369,7 +378,6 @@ if __name__ == '__main__':
         'num_classes': args.num_classes,
         'save_models': args.save_models,
         'save_results': args.save_results,
-        'load_prev_model': args.load_prev_model,
         'device': args.device,
         'model_config': {}
     }

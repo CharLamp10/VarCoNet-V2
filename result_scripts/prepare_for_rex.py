@@ -194,7 +194,7 @@ def main(config):
     '''------------------------------------------VAE-K-SVD---------------------------------------'''  
     vae = Model_VAE(roi_num).to(device)
     state_dict_vae = torch.load(os.path.join(config['path_save'],'models_HCP',config['atlas'],'VAE_KSVD','model.pth'))
-    D = torch.load(os.path.join(config['path_save'],'models_HCP','VAE_KSVD',config['atlas'],'dictionary.pt'))
+    D = torch.load(os.path.join(config['path_save'],'models_HCP',config['atlas'],'VAE_KSVD','dictionary.pt'))
     vae.load_state_dict(state_dict_vae)
     out1_vae, out2_vae = test_vae(vae,test_data1_vae,test_data2_vae,D,device)
     out1_vae = np.squeeze(out1_vae)
@@ -266,11 +266,11 @@ def main(config):
 if __name__ == '__main__':    
     parser = argparse.ArgumentParser(description='Run this script to prepare data for ReX toolbox')
 
-    parser.add_argument('--path_data', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/SSL_FC_matrix_GNN_data/HCP',
+    parser.add_argument('--path_data', type=str,
                         help='Path to the dataset')
-    parser.add_argument('--path_save', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results',
+    parser.add_argument('--path_save', type=str,
                         help='Path to save results')
-    parser.add_argument('--atlas', type=str, choices=['AICHA', 'AAL'], default='AAL',
+    parser.add_argument('--atlas', type=str, choices=['AICHA', 'AAL'], default='AICHA',
                         help='Atlas type to use')
     parser.add_argument('--device', type=str, default='cuda:0',
                         help='Device to use for training')
@@ -287,7 +287,11 @@ if __name__ == '__main__':
     config = {
         'path_data': args.path_data,
         'path_save': args.path_save,
+        'device': args.device,
         'atlas': args.atlas,
+        'length': args.length,
+        'batch_size': args.batch_size,
+        'max_length': args.max_length,
         'model_config': {}
     }
 

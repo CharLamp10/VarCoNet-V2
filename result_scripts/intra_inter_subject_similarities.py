@@ -3,15 +3,12 @@ import pickle
 import os
 import seaborn as sns
 import matplotlib.pyplot as plt
-from pathlib import Path
 
-atlas = 'AAL'
-path_results = r'/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results' #path where results have been saved
+path_results = r'...' #here, enter the path where results have been saved
+atlas = 'AAL'         #choose atlas (AICHA, AAL)
 
-path = Path(os.getcwd())
-parent = path.parent
-if not os.path.exists(os.path.join(parent,"paper_plots")):
-    os.mkdir(os.path.join(parent,"paper_plots"))
+if not os.path.exists(os.path.join(path_results,"plots")):
+    os.mkdir(os.path.join(path_results,"plots"))
 
 if atlas == 'AICHA':
     vmax = 0.7
@@ -29,7 +26,7 @@ plt.xticks([])
 plt.yticks([])
 cbar = ax.collections[0].colorbar
 cbar.ax.tick_params(labelsize=20)
-plt.savefig(os.path.join(parent,"paper_plots","VarCoNet_" + atlas + "_100_subjs.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots","VarCoNet_" + atlas + "_100_subjs.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -44,7 +41,7 @@ plt.xticks([])
 plt.yticks([])
 cbar = ax.collections[0].colorbar
 cbar.ax.tick_params(labelsize=20)
-plt.savefig(os.path.join(parent,"paper_plots","VAE_" + atlas + "_100_subjs.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots","VAE_" + atlas + "_100_subjs.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -59,7 +56,7 @@ plt.xticks([])
 plt.yticks([])
 cbar = ax.collections[0].colorbar
 cbar.ax.tick_params(labelsize=20)
-plt.savefig(os.path.join(parent,"paper_plots","AE_" + atlas + "_100_subjs.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots","AE_" + atlas + "_100_subjs.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -75,5 +72,5 @@ plt.xticks([])
 plt.yticks([])
 cbar = ax.collections[0].colorbar
 cbar.ax.tick_params(labelsize=20)
-plt.savefig(os.path.join(parent,"paper_plots","PCC_" + atlas + "_100_subjs.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots","PCC_" + atlas + "_100_subjs.png"), dpi=600, bbox_inches='tight')
 plt.show()

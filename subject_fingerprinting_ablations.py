@@ -218,7 +218,7 @@ def main(config):
         
         if config['save_results']:
             if not os.path.exists(os.path.join(config['path_save'],'ablations','results_HCP')):
-                os.mkdir(os.path.join(config['path_save'],'ablations','results_HCP'))   
+                os.makedirs(os.path.join(config['path_save'],'ablations','results_HCP'), exist_ok=True)   
             with open(os.path.join(config['path_save'],'ablations','results_HCP','HCP_VarCoNet_ablations.pkl'), 'wb') as f:
                 pickle.dump(results,f)
     return results
@@ -227,9 +227,9 @@ def main(config):
 if __name__ == '__main__':    
     parser = argparse.ArgumentParser(description='Run VarCoNet Ablations on HCP for subject fingerprinting')
 
-    parser.add_argument('--path_data', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/SSL_FC_matrix_GNN_data/HCP',
+    parser.add_argument('--path_data', type=str, 
                         help='Path to the dataset')
-    parser.add_argument('--path_save', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results',
+    parser.add_argument('--path_save', type=str,
                         help='Path to save results')
     parser.add_argument('--device', type=str, default='cuda:0',
                         help='Device to use for training')
@@ -245,12 +245,8 @@ if __name__ == '__main__':
                         help='Maximum number of epochs without improvement')
     parser.add_argument('--warm_up_epochs', type=int, default=10,
                         help='Number of warm up epochs for the lr scheduler')
-    parser.add_argument('--save_models', action='store_true',
-                        help='Flag to save trained models')
     parser.add_argument('--save_results', action='store_true',
                         help='Flag to save results')
-    parser.add_argument('--load_prev_model', action='store_true',
-                        help='Flag to load a previously trained model')
 
     args = parser.parse_args()
 
@@ -265,9 +261,7 @@ if __name__ == '__main__':
         'early_stopping': args.early_stopping,
         'warm_up_epochs': args.warm_up_epochs,
         'eval_epochs': list(range(1, args.epochs+1)),
-        'save_models': args.save_models,
         'save_results': args.save_results,
-        'load_prev_model': args.load_prev_model,
         'device': args.device,
         'model_config': {}
     }

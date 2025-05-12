@@ -54,6 +54,9 @@ def test(model,test_data1,test_data2,D,num_winds,batch_size,device):
             outputs2.append(torch.cat(outputs, dim=0))
         outputs2 = torch.stack(outputs2)
         
+        del data, outputs
+        torch.cuda.empty_cache()
+        
         test_data1 = torch.stack(test_data1)
         test_data2 = torch.stack(test_data2)
         
@@ -135,7 +138,7 @@ def main(config):
     data = np.load(os.path.join(path,'val_data_HCP_' + config['atlas'] + '_2_resampled.npz'))
     val_data2 = []
     for key in data:
-        val_data1.append(data[key])
+        val_data2.append(data[key])
     
     data = np.load(os.path.join(path,'test_data_HCP_' + config['atlas'] + '_1_resampled.npz'))
     test_data1 = []
@@ -155,7 +158,7 @@ def main(config):
     
     for i,data in enumerate(test_data1):
         data = torch.from_numpy(data.astype(np.float32))
-        data = test_augment(data, config['test_lengths'], config['num_test_winds'], max_length)
+        data = test_augment(data, config['test_winds'], config['num_test_winds'], max_length)
         corrs = []
         for dat in data:
             zero_rows = torch.all(dat == 0, axis=1)
@@ -169,7 +172,7 @@ def main(config):
         
     for i,data in enumerate(test_data2):
         data = torch.from_numpy(data.astype(np.float32))
-        data = test_augment(data, config['test_lengths'], config['num_test_winds'], max_length)
+        data = test_augment(data, config['test_winds'], config['num_test_winds'], max_length)
         corrs = []
         for dat in data:
             zero_rows = torch.all(dat == 0, axis=1)
@@ -183,7 +186,7 @@ def main(config):
         
     for i,data in enumerate(val_data1):
         data = torch.from_numpy(data.astype(np.float32))
-        data = test_augment(data, config['test_lengths'], config['num_test_winds'], max_length)
+        data = test_augment(data, config['test_winds'], config['num_test_winds'], max_length)
         corrs = []
         for dat in data:
             zero_rows = torch.all(dat == 0, axis=1)
@@ -197,7 +200,7 @@ def main(config):
         
     for i,data in enumerate(val_data2):
         data = torch.from_numpy(data.astype(np.float32))
-        data = test_augment(data, config['test_lengths'], config['num_test_winds'], max_length)
+        data = test_augment(data, config['test_winds'], config['num_test_winds'], max_length)
         corrs = []
         for dat in data:
             zero_rows = torch.all(dat == 0, axis=1)
@@ -240,11 +243,11 @@ def main(config):
                 scheduler.step()
         model_state_dict = copy.deepcopy(model.state_dict())
         if config['save_models']:        
-            if not os.path.exists(os.path.join(config['save_path'],'models_HCP',config['atlas'],'VAE_KSVD')):
-                os.makedirs(os.path.join(config['save_path'],'models_HCP',config['atlas'],'VAE_KSVD'), exist_ok=True)        
-            torch.save(model_state_dict, os.path.join(config['save_path'],'models_HCP',config['atlas'],'VAE_KSVD','model.pth'))
+            if not os.path.exists(os.path.join(config['path_save'],'models_HCP',config['atlas'],'VAE_KSVD')):
+                os.makedirs(os.path.join(config['path_save'],'models_HCP',config['atlas'],'VAE_KSVD'), exist_ok=True)        
+            torch.save(model_state_dict, os.path.join(config['path_save'],'models_HCP',config['atlas'],'VAE_KSVD','model.pth'))
     else:
-        model_state_dict = torch.load(os.path.join(config['save_path'],'models_HCP',config['atlas'],'VAE_KSVD','model.pth'))
+        model_state_dict = torch.load(os.path.join(config['path_save'],'models_HCP',config['atlas'],'VAE_KSVD','model.pth'))
         model = Model_VAE(roi_num).to(device)
         model.load_state_dict(model_state_dict)
         model.eval()
@@ -258,11 +261,11 @@ def main(config):
         r = torch.cat(all_z) - torch.cat(all_batch_data)
         D,x,_ = ksvd(r.detach().cpu().numpy(), 100, 25, maxiter=50,device=config['device'])
         if config['save_models']:        
-            if not os.path.exists(os.path.join(config['save_path'],'models_HCP',config['atlas'],'VAE_KSVD')):
-                os.makedirs(os.path.join(config['save_path'],'models_HCP',config['atlas'],'VAE_KSVD'), exist_ok=True)        
-            torch.save(D, os.path.join(config['save_path'],'models_HCP',config['atlas'],'VAE_KSVD','dictionary.pt'))
+            if not os.path.exists(os.path.join(config['path_save'],'models_HCP',config['atlas'],'VAE_KSVD')):
+                os.makedirs(os.path.join(config['path_save'],'models_HCP',config['atlas'],'VAE_KSVD'), exist_ok=True)        
+            torch.save(D, os.path.join(config['path_save'],'models_HCP',config['atlas'],'VAE_KSVD','dictionary.pt'))
     else:
-        D = torch.load(os.path.join(config['save_path'],'models_HCP',config['atlas'],'VAE_KSVD','dictionary.pt'))
+        D = torch.load(os.path.join(config['path_save'],'models_HCP',config['atlas'],'VAE_KSVD','dictionary.pt'))
     
     val_result = test(model, val_data1, val_data2, D, len(config['test_winds']), config['batch_size'], device)
     test_result = test(model, test_data1, test_data2, D, len(config['test_winds']), config['batch_size'], device)
@@ -273,7 +276,7 @@ def main(config):
     if config['save_results']:
         if not os.path.exists('results'):
             os.mkdir('results')   
-        with open(os.path.join(config['save_path'],'results_HCP',config['atlas'],'HCP_VAE_KSVD_results.pkl'), 'wb') as f:
+        with open(os.path.join(config['path_save'],'results_HCP',config['atlas'],'HCP_VAE_KSVD_results.pkl'), 'wb') as f:
             pickle.dump(results,f)
     return results
 
@@ -281,9 +284,9 @@ def main(config):
 if __name__ == '__main__':    
     parser = argparse.ArgumentParser(description='Run the method of Lu et al. 2024 on HCP for subject fingerprinting')
     
-    parser.add_argument('--path_data', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/SSL_FC_matrix_GNN_data/HCP',
+    parser.add_argument('--path_data', type=str,
                         help='Path to the dataset')
-    parser.add_argument('--path_save', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results',
+    parser.add_argument('--path_save', type=str,
                         help='Path to save results')
     parser.add_argument('--atlas', type=str, choices=['AICHA', 'AAL'], default='AICHA',
                         help='Atlas type to use')
