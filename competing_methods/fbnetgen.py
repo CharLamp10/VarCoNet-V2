@@ -349,7 +349,6 @@ def main(config):
     if config['save_results']:            
         if not os.path.exists(os.path.join(config['path_save'],'results_ABIDEI',config['atlas'])):
             os.makedirs(os.path.join(config['path_save'],'results_ABIDEI',config['atlas']),exist_ok=True)
-        
         with open(os.path.join(config['path_save'],'results_ABIDEI',config['atlas'],'ABIDEI_FBNET_results.pkl'), "wb") as pickle_file:
             pickle.dump(results, pickle_file)
     return results

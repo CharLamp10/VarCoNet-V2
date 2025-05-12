@@ -62,6 +62,9 @@ def main(config):
     with open(os.path.join(config['path_save'],'results_ABIDEI',config['atlas'],'ABIDEI_BolT_results.pkl'), 'rb') as f:
         result_bolt = pickle.load(f)
     
+    random_states = len(result_varconet['epoch_results_ext'])
+    epochs_varconet = len(result_varconet['epoch_results_ext'][0])
+    
     if config['atlas'] == 'AAL':
         roi_num = 166
     else:
@@ -70,13 +73,13 @@ def main(config):
     test_probs_VarCoNet = []
     change_BolT = 0
     change_VarCoNet = 0
-    for j in range(10):
+    for j in range(random_states):
         ext_test_aucs_bolt = np.array(result_bolt['ext_test_aucs'][j])
         best_epoch = np.where(ext_test_aucs_bolt == np.max(ext_test_aucs_bolt))[0][0]
         ext_test_probs_bolt = result_bolt['ext_test_probs'][j][best_epoch]
         
         ext_test_aucs_VarCoNet = []
-        for i in range(50):
+        for i in range(epochs_varconet):
             ext_test_aucs_VarCoNet.append(np.array(result_varconet['epoch_results_ext'][j][i]['best_test_auc']))
         best_epoch = np.where(ext_test_aucs_VarCoNet == np.max(ext_test_aucs_VarCoNet))[0][0]
         ext_test_probs_VarCoNet = result_varconet['epoch_results_ext'][j][best_epoch]['test_probs']
@@ -186,9 +189,9 @@ def main(config):
 if __name__ == '__main__':   
     parser = argparse.ArgumentParser(description='Prediction stability of VarCoNet and BolT')
 
-    parser.add_argument('--path_data', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/SSL_FC_matrix_GNN_data/ABIDEI/fmriprep',
+    parser.add_argument('--path_data', type=str,
                         help='Path to the dataset')
-    parser.add_argument('--path_save', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results',
+    parser.add_argument('--path_save', type=str,
                         help='Path to save results')
     parser.add_argument('--batch_size', type=int, default=64,
                         help='Batch size')
