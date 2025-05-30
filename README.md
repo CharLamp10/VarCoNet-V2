@@ -10,6 +10,7 @@ nibabel == 5.3.2
 nilearn == 0.11.1
 lightning-bolts == 0.7.0
 pandas == 2.2.3
+wandb == 0.16.6
 ```
 
 # Block diagram
@@ -50,6 +51,7 @@ config['device'] = "cuda:0"
 ```
 
 # Train and test VarCoNet for subject fingerprinting using HCP data
+**For all following scripts, it is important to use the same --path_save!!!**
 To apply VarCoNet on the HCP data one can run:
 ```python
 python -m subject_fingerprinting \ 
@@ -125,6 +127,21 @@ python -m predictions_stability \
 There are additional input arguments that one can set. For more information check the script. Other competing methods can also be run using a similar format.
 
 **For all these scripts, it is important to use the same --path_save!!!**
+
+# Extracting and plotting results
+Scripts to extract and plot results exist in the result_scripts folder. Running them is quite straightforward. All of them require the path_save were all previous scripts saved their results. 
+- ablation_plots.py: illustrates the results of the ablation experiments.
+- ASD_feature_importance: saves a .csv file containing the importance of each connection among brain regions
+- BO_plot.py: creates a project (e.g. VarCoNet-V2-AICHA-BO-plot_final) that can be accessed at https://wandb.ai . One can open this project and then click "add panels" and select the "parallel coordinates" option. Then click the "add column" button until all columns are added. This will result to adding some non useful columns that can then be removed. The final column should be "Obj. Func.".
+- display_results_ABIDE: this script prints the resuls on ASD classification
+- intra_inter_subject_similarities.py: this scripts illustrates the intra-inter subject similarity matrices
+- plot_fingerprinting_results.py: this script plots the results of the subject fingerprinting tests
+- prepare_for_rex.py: this script prepares the inputs for the ReX toolbox (the ReX toolbox can be downloaded from: https://github.com/TingsterX/Reliability_Explorer)
+- rex_plots.R and rex_plots_2.R: these scripts use ReX to visualise intra-class correlation and the gradient flow map of the individual variation field
+- prepare_for_BrainNetViewer.R: this script takes as input the .csv file containing feature importance values and the locations to the files AAL3_coords.npy and AICHA_coords.npy and creates files ready to be used by the BrainNetViewer toolbox
+
+# Replicating our results
+All training data, produced by the abovementioned scripts can be downloaded from the following link: . Moreover, all our results including the weights of our trained models and the ASD classification predictions for each sample can be downloaded from the following link: . The .npy files that inlude the results of ASD classification also include the IDs of the subjects used for training, validation and testing, at each fold of the 10-fold CV. In this way we enable future studies to directly compare their models to ours (by using the same subjects for training, validation and testing), thus eliminating the need to run our code from scratch. In contrast, one can directly use the results extracted from the abovementioned scripts, when applied to the files downloaded from the aforementioned link. 
 
 
 
