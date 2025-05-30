@@ -1,5 +1,6 @@
 # VarCoNet
-Code developed and tested in Python 3.8.12 using PyTorch 2.1.2. Below are some necessary requirements.
+This repository includes all code related to our paper: VarCoNet: A variability-aware self-supervised framework for functional connectome extraction from resting-state fMRI. The paper is currently under review.
+Code developed and tested in Python 3.11.8 using PyTorch 2.1.2. Below are some necessary requirements.
 
 ```python
 numpy == 1.26.4
@@ -143,6 +144,6 @@ Scripts to extract and plot results exist in the result_scripts folder. Running 
 # Replicating our results
 All training data, produced by the abovementioned scripts can be downloaded from the following link: . Moreover, all our results including the weights of our trained models and the ASD classification predictions for each sample can be downloaded from the following link: . The .npy files that inlude the results of ASD classification also include the IDs of the subjects used for training, validation and testing, at each fold of the 10-fold CV. In this way we enable future studies to directly compare their models to ours (by using the same subjects for training, validation and testing), thus eliminating the need to run our code from scratch. In contrast, one can directly use the results extracted from the abovementioned scripts, when applied to the files downloaded from the aforementioned link. 
 
-
+If you have any inquiry, encouter an error or need help understanding how to use this repository don't hesitate to contact us at: xaralabos10@hotmail.gr or charalampos.lamprou@ku.ac.ae
 
 
