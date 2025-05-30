@@ -10,7 +10,7 @@ nibabel == 5.3.2
 nilearn == 0.11.1
 lightning-bolts == 0.7.0
 pandas == 2.2.3
-'''
+```
 
 # Block diagram
 ![Architecture Diagram](plots/block_diagram.png)
