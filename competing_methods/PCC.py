@@ -131,6 +131,8 @@ def main(config):
     results['val_result'] = [accuracies_val, mean_accs_val, std_accs_val, corr_coeffs_val]
     results['test_result'] = [accuracies_test, mean_accs_test, std_accs_test, corr_coeffs_test]
     if config['save_results']:
+        if not os.path.exists(config['path_save'],'results_HCP'):
+            os.mkdir(config['path_save'],'results_HCP')   
         with open(os.path.join(config['path_save'],'results_HCP',config['atlas'],'HCP_PCC_results.pkl'), 'wb') as f:
             pickle.dump(results,f)
 

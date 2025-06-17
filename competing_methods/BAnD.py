@@ -393,7 +393,6 @@ def main(config):
     if config['save_results']:            
         if not os.path.exists(os.path.join(config['path_save'],'results_ABIDEI')):
             os.makedirs(os.path.join(config['path_save'],'results_ABIDEI'),exist_ok=True)
-        
         with open(os.path.join(config['path_save'],'results_ABIDEI','ABIDEI_BAnD_results.pkl'), "wb") as pickle_file:
             pickle.dump(results, pickle_file)
     return results

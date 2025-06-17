@@ -244,9 +244,9 @@ def main(config):
             y_test_all.append(y_tests)
             
             if config['save_models']:
-                if not os.path.exists(os.path.join('models_ABIDEI',config['atlas'],'BolT')):
-                    os.makedirs(os.path.join('models_ABIDEI',config['atlas'],'BolT'),exist_ok=True)
-                torch.save(min_val_loss_model_dict, os.path.join('models_ABIDEI',config['atlas'],'BolT','min_val_loss_model_rs' + str(i) + '_fold' + str(j) + '.pth'))
+                if not os.path.exists(os.path.join(config['path_save'],'models_ABIDEI',config['atlas'],'BolT')):
+                    os.makedirs(os.path.join(config['path_save'],'models_ABIDEI',config['atlas'],'BolT'),exist_ok=True)
+                torch.save(min_val_loss_model_dict, os.path.join(config['path_save'],'models_ABIDEI',config['atlas'],'BolT','min_val_loss_model_rs' + str(i) + '_fold' + str(j) + '.pth'))
     
     
     '''------------------------------------Ext. test------------------------------------'''
@@ -395,8 +395,7 @@ def main(config):
     
     if config['save_results']:            
         if not os.path.exists(os.path.join(config['path_save'],'results_ABIDEI',config['atlas'])):
-            os.makedirs(os.path.join(config['path_save'],'results_ABIDEI',config['atlas']), exist_ok = True)
-        
+            os.makedirs(os.path.join(config['path_save'],'results_ABIDEI',config['atlas']), exist_ok = True)   
         with open(os.path.join(config['path_save'],'results_ABIDEI',config['atlas'],'ABIDEI_BolT_results.pkl'), "wb") as pickle_file:
             pickle.dump(results, pickle_file)
     return results
