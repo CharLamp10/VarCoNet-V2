@@ -147,7 +147,7 @@ def main(config):
     for i in range(10):
         skf = StratifiedKFold(n_splits=10, shuffle = True, random_state=42+i)
         for j, (train_index, test_index) in enumerate(skf.split(data, y)):
-            train_data = [data[i] for i in train_index]
+            train_data = [data[n] for n in train_index]
             test_data = [data[n] for n in test_index]
             y_train = y[train_index]
             y_test = y[test_index]
