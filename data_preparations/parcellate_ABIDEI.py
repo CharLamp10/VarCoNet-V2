@@ -36,7 +36,7 @@ for i in range(len(dire)):
                     flag = flag + 1
                 if 'confounds' in file:
                     flag = flag + 1
-            if flag == 2:
+            if flag >= 2:
                 for j in range(len(dir_sucject)):
                     file = dir_sucject[j]
                     if 'smoothAROMAnonaggr' in file:

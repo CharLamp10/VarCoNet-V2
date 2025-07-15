@@ -2,10 +2,12 @@ library(rsfcNet)
 library(RcppCNPy)
 library(data.table)
 
-
-path_varconet_aal_abide <- "C:\\Users\\100063082\\Desktop\\VarCoNet_results\\results_ABIDEI\\feature_importance\\AAL_feature_importance.csv"
+path = "C:\\Users\\100063082\\Desktop\\VarCoNet_results\\results_ABIDEI\\feature_importance"
+path_save = "C:\\Users\\100063082\\Desktop\\VarCoNet_results\\results_ABIDEI\\feature_importance\\"
+  
+path_varconet_aal_abide <- file.path(path, "AAL_feature_importance.csv")
 data_varconet_aal_abide <- as.matrix(fread(path_varconet_aal_abide))
-path_varconet_aicha_abide <- "C:\\Users\\100063082\\Desktop\\VarCoNet_results\\results_ABIDEI\\feature_importance\\AICHA_feature_importance.csv"
+path_varconet_aicha_abide <- file.path(path, "AICHA_feature_importance.csv")
 data_varconet_aicha_abide <- as.matrix(fread(path_varconet_aicha_abide))
 
 top_values <- sort(data_varconet_aal_abide, decreasing = TRUE)[1:20]
@@ -24,8 +26,8 @@ tri_idx <- which(upper.tri(mat_varconet_aal))
 mat_varconet_aal[tri_idx] <- data_varconet_aal_abide
 mat_varconet_aal <- mat_varconet_aal + t(mat_varconet_aal)
 
-aal_coords <- npyLoad("C:\\Users\\100063082\\Desktop\\VarCoNet_results\\results_ABIDEI\\AAL3_coords.npy")
-aicha_coords <- npyLoad("C:\\Users\\100063082\\Desktop\\VarCoNet_results\\results_ABIDEI\\AICHA_coords.npy")
+aal_coords <- npyLoad(file.path(path, "AAL3_coords.npy"))
+aicha_coords <- npyLoad(file.path(path, "AICHA_coords.npy"))
 
 nonzero_rows <- apply(mat_varconet_aicha, 1, function(row) any(row != 0))
 row_indices <- which(nonzero_rows)
@@ -41,7 +43,7 @@ write_brainNet(
   aicha_coords,
   node.size = rep(0, length(aicha_coords)),
   mat_varconet_aicha,
-  directory = 'C:\\Users\\100063082\\Desktop\\VarCoNet_results\\results_ABIDEI\\feature_importance\\',
+  directory = path_save,
   name = 'brainNet_AICHA_ASD'
 )
 
@@ -49,7 +51,7 @@ write_brainNet(
   aal_coords,
   node.size = rep(0, length(aal_coords)),
   mat_varconet_aal,
-  directory = 'C:\\Users\\100063082\\Desktop\\VarCoNet_results\\results_ABIDEI\\feature_importance\\',
+  directory = path_save,
   name = 'brainNet_AAL_ASD'
 )
 
