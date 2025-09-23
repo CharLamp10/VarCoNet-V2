@@ -8,23 +8,30 @@ import torch.nn.functional as F
 from torch.optim import Adam
 from utils import DualBranchContrast
 from pl_bolts.optimizers import LinearWarmupCosineAnnealingLR
-from model_scripts.VarCoNet import VarCoNet_noSSL, VarCoNet_noCNN
+from model_scripts.VarCoNet import VarCoNet_noSSL, VarCoNet_noCNN, VarCoNet_noTransformer, VarCoNet
 from utils import ABIDEDataset
 import os
 from model_scripts.classifier import LREvaluator
 import pickle
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import roc_auc_score
-from utils import augment, removeDuplicates, test_augment_overlap
+from utils import augment, removeDuplicates, test_augment_overlap, other_augment1, other_augment2
 import argparse
 
 
 def train(x, encoder_model, contrast_model, optimizer):
     encoder_model.train()
     optimizer.zero_grad()
-    z1 = encoder_model(x[0])
-    z2 = encoder_model(x[1])
-    loss = contrast_model(z1, z2)
+    if len(x) == 2:
+        z1 = encoder_model(x[0])
+        z2 = encoder_model(x[1])
+        loss = contrast_model(z1, z2)
+    elif len(x) == 4:
+        z1 = encoder_model(x[0])
+        z2 = encoder_model(x[1])
+        z3 = encoder_model(x[2])
+        z4 = encoder_model(x[3])
+        loss = contrast_model(z1, z2) + contrast_model(z3, z4)
     loss.backward()
     optimizer.step()
     return loss.item(), z1.shape[1]
@@ -46,24 +53,34 @@ def test(encoder_model, train_loader, val_loader, test_loader,
          min_length, max_length, num_classes, device, num_epochs, lr):
     encoder_model.eval()
     with torch.no_grad():
+        #outputs_train = []
+        #y_train = []
+        #for (x,y) in train_loader:
+        #    xs = []
+        #    ys = []
+        #    for (xi,yi) in zip(x,y):
+        #        xs.append(xi.unsqueeze(0).to(device))
+        #        ys.append(yi)
+        #        xi = test_augment_overlap(xi,[4,3,2,1],0.5,min_length,max_length,device)
+        #        xs.append(xi)
+        #        for i in range(xi.shape[0]):
+        #            ys.append(yi)
+        #    xs = torch.cat(xs)
+        #    xs = xs.to(device)
+        #    y_train.append(torch.tensor(ys))
+        #    outputs_train.append(encoder_model(xs))
+        #outputs_train = torch.cat(outputs_train, dim=0).clone().detach()
+        #y_train = torch.cat(y_train,dim=0).to(device)
+        
         outputs_train = []
         y_train = []
         for (x,y) in train_loader:
-            xs = []
-            ys = []
-            for (xi,yi) in zip(x,y):
-                xs.append(xi.unsqueeze(0).to(device))
-                ys.append(yi)
-                xi = test_augment_overlap(xi,[4,3,2,1],0.5,min_length,max_length,device)
-                xs.append(xi)
-                for i in range(xi.shape[0]):
-                    ys.append(yi)
-            xs = torch.cat(xs)
-            xs = xs.to(device)
-            y_train.append(torch.tensor(ys))
-            outputs_train.append(encoder_model(xs))
+            x = x.to(device)
+            y_train.append(y)
+            outputs_train.append(encoder_model(x))
         outputs_train = torch.cat(outputs_train, dim=0).clone().detach()
         y_train = torch.cat(y_train,dim=0).to(device)
+    
         
         outputs_val = []
         y_val = []
@@ -109,6 +126,10 @@ def main(config):
     results = {}
     results['no_SSL'] = {}
     results['no_CNN'] = {}
+    results['no_Transformer'] = {}
+    results['other_augmentations'] = {}
+    results['other_augmentations']['augmentation1'] = {}
+    results['other_augmentations']['augmentation2'] = {}
     for atlas in ['AAL', 'AICHA']:
         with open(f'best_params_VarCoNet_{atlas}.pkl', 'rb') as f:
             best_params = pickle.load(f)
@@ -175,13 +196,106 @@ def main(config):
         model_config = config['model_config'] 
         model_config['max_length'] = max_length
         
+        '''---------------------------------no Transformer---------------------------------'''
+        '''------------------------------------KFold CV------------------------------------'''
+        
+        losses_all = []
+        test_result_all = []
+        min_val_loss_epochs = []
+        names_train_all = []
+        names_val_all = []
+        names_test_all = []
+        for i in range(10):
+            skf = StratifiedKFold(n_splits=10, shuffle = True, random_state=42+i)
+            for j, (train_index, test_index) in enumerate(skf.split(data, y)):
+                train_data = [data[i] for i in train_index]
+                test_data = [data[n] for n in test_index]
+                y_train = y[train_index]
+                y_test = y[test_index]
+                names_train = [names[n] for n in train_index]
+                names_test = [names[n] for n in test_index]
+                train_data, val_data, y_train, y_val, train_idx, val_idx = train_test_split(train_data,
+                                                                                            y_train, 
+                                                                                            np.arange(len(train_data)), 
+                                                                                            test_size=0.15, 
+                                                                                            random_state=42, 
+                                                                                            stratify=y_train)
+                names_val = [names_train[n] for n in val_idx]
+                names_train = [names_train[n] for n in train_idx]
+                train_data = train_DATA + train_data
+                y_train = np.concatenate((Y_train, y_train))
+                names_train = names_duplicate + names_train
+                train_dataset = ABIDEDataset(train_data, y_train)
+                train_loader = DataLoader(train_dataset, batch_size=config['batch_size'],shuffle=config['shuffle'])
+                val_dataset = ABIDEDataset(val_data, y_val)
+                val_loader = DataLoader(val_dataset, batch_size=config['batch_size'])
+                test_dataset = ABIDEDataset(test_data, y_test)
+                test_loader = DataLoader(test_dataset, batch_size=config['batch_size'])  
+                names_train_all.append(names_train)
+                names_val_all.append(names_val)
+                names_test_all.append(names_test)
+                
+                roi_num = test_data[0].shape[1]
+                max_length = test_data[0].shape[0]
+                model_config['max_length'] = max_length
+                encoder_model = VarCoNet_noTransformer(model_config, roi_num).to(device)
+                contrast_model = DualBranchContrast(loss=InfoNCE(tau=config['tau']),mode='L2L').to(device)
+                optimizer = Adam(encoder_model.parameters(), lr=config['lr'])
+                scheduler = LinearWarmupCosineAnnealingLR(
+                    optimizer=optimizer,
+                    warmup_start_lr = 1e-5,
+                    warmup_epochs=config['warm_up_epochs'],
+                    max_epochs=config['epochs'])
+                      
+                min_val_loss = 1000
+                test_result = []
+                losses = []
+                with tqdm(total=config['epochs'], desc='(T)') as pbar:
+                    for epoch in range(1,config['epochs']+1):
+                        total_loss = 0.0
+                        batch_count = 0                
+                        for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
+                            sample_inds = removeDuplicates(names_train,sample_inds)
+                            batch_list = [train_data[i] for i in sample_inds]
+                            batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
+                            batch_data = next(iter(batch_loader))
+                            batch_data = augment(batch_data,train_length_limits,device)
+                            loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
+                            total_loss += loss
+                            batch_count += 1
+                        scheduler.step()
+                                
+                        average_loss = total_loss / batch_count if batch_count > 0 else float('nan')   
+                        losses.append(average_loss)
+                        pbar.set_postfix({'loss': average_loss})
+                        pbar.update()        
+                        
+                        if epoch in eval_epochs:
+                            res,linear_state_dict = test(encoder_model,train_loader,val_loader,test_loader,
+                                       config['min_length'],max_length,config['num_classes'],
+                                       device,config['epochs_cls'],config['lr_cls'])
+                            test_result.append(res) 
+                            if res['best_val_loss'] < min_val_loss:
+                                min_val_loss = res['best_val_loss']
+                                min_val_loss_epoch = epoch
+                losses_all.append(losses)
+                test_result_all.append(test_result)
+                min_val_loss_epochs.append(min_val_loss_epoch)
+        
+        results['no_Transformer'][atlas] = {}
+        results['no_Transformer'][atlas]['losses'] = losses_all
+        results['no_Transformer'][atlas]['epoch_results'] = test_result_all
+        results['no_Transformer'][atlas]['min_val_loss_epoch'] = min_val_loss_epochs
+        results['no_Transformer'][atlas]['names_train'] = names_train_all
+        results['no_Transformer'][atlas]['names_val'] = names_val_all
+        results['no_Transformer'][atlas]['names_test'] = names_test_all
+        
         '''-------------------------------------no CNN-------------------------------------'''
         '''------------------------------------KFold CV------------------------------------'''
         
         losses_all = []
         test_result_all = []
         min_val_loss_epochs = []
-        min_loss_epochs = []
         names_train_all = []
         names_val_all = []
         names_test_all = []
@@ -237,7 +351,7 @@ def main(config):
                             batch_list = [train_data[i] for i in sample_inds]
                             batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
                             batch_data = next(iter(batch_loader))
-                            batch_data = augment(batch_data,train_length_limits,max_length,device)
+                            batch_data = augment(batch_data,train_length_limits,device)
                             loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
                             total_loss += loss
                             batch_count += 1
@@ -264,7 +378,6 @@ def main(config):
         results['no_CNN'][atlas]['losses'] = losses_all
         results['no_CNN'][atlas]['epoch_results'] = test_result_all
         results['no_CNN'][atlas]['min_val_loss_epoch'] = min_val_loss_epochs
-        results['no_CNN'][atlas]['min_loss_epoch'] = min_loss_epochs
         results['no_CNN'][atlas]['names_train'] = names_train_all
         results['no_CNN'][atlas]['names_val'] = names_val_all
         results['no_CNN'][atlas]['names_test'] = names_test_all
@@ -400,6 +513,190 @@ def main(config):
         results['no_SSL'][atlas]['names_train'] = names_train_all
         results['no_SSL'][atlas]['names_val'] = names_val_all
         
+        '''-----------------------Other augmentations - augmentation 1---------------------'''
+        '''------------------------------------KFold CV------------------------------------'''
+        
+        losses_all = []
+        test_result_all = []
+        min_val_loss_epochs = []
+        names_train_all = []
+        names_val_all = []
+        names_test_all = []
+        for i in range(10):
+            skf = StratifiedKFold(n_splits=10, shuffle = True, random_state=42+i)
+            for j, (train_index, test_index) in enumerate(skf.split(data, y)):
+                train_data = [data[i] for i in train_index]
+                test_data = [data[n] for n in test_index]
+                y_train = y[train_index]
+                y_test = y[test_index]
+                names_train = [names[n] for n in train_index]
+                names_test = [names[n] for n in test_index]
+                train_data, val_data, y_train, y_val, train_idx, val_idx = train_test_split(train_data,
+                                                                                            y_train, 
+                                                                                            np.arange(len(train_data)), 
+                                                                                            test_size=0.15, 
+                                                                                            random_state=42, 
+                                                                                            stratify=y_train)
+                names_val = [names_train[n] for n in val_idx]
+                names_train = [names_train[n] for n in train_idx]
+                train_data = train_DATA + train_data
+                y_train = np.concatenate((Y_train, y_train))
+                names_train = names_duplicate + names_train
+                train_dataset = ABIDEDataset(train_data, y_train)
+                train_loader = DataLoader(train_dataset, batch_size=config['batch_size'],shuffle=config['shuffle'])
+                val_dataset = ABIDEDataset(val_data, y_val)
+                val_loader = DataLoader(val_dataset, batch_size=config['batch_size'])
+                test_dataset = ABIDEDataset(test_data, y_test)
+                test_loader = DataLoader(test_dataset, batch_size=config['batch_size'])  
+                names_train_all.append(names_train)
+                names_val_all.append(names_val)
+                names_test_all.append(names_test)
+                
+                roi_num = test_data[0].shape[1]
+                encoder_model = VarCoNet(model_config, roi_num).to(device)
+                contrast_model = DualBranchContrast(loss=InfoNCE(tau=config['tau']),mode='L2L').to(device)
+                optimizer = Adam(encoder_model.parameters(), lr=config['lr'])
+                scheduler = LinearWarmupCosineAnnealingLR(
+                    optimizer=optimizer,
+                    warmup_start_lr = 1e-5,
+                    warmup_epochs=config['warm_up_epochs'],
+                    max_epochs=config['epochs'])
+                      
+                min_val_loss = 1000
+                test_result = []
+                losses = []
+                with tqdm(total=config['epochs'], desc='(T)') as pbar:
+                    for epoch in range(1,config['epochs']+1):
+                        total_loss = 0.0
+                        batch_count = 0                
+                        for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
+                            sample_inds = removeDuplicates(names_train,sample_inds)
+                            batch_list = [train_data[i] for i in sample_inds]
+                            batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
+                            batch_data = next(iter(batch_loader))
+                            batch_data = other_augment1(batch_data,train_length_limits,device)
+                            loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
+                            total_loss += loss
+                            batch_count += 1
+                        scheduler.step()
+                                
+                        average_loss = total_loss / batch_count if batch_count > 0 else float('nan')   
+                        losses.append(average_loss)
+                        pbar.set_postfix({'loss': average_loss})
+                        pbar.update()        
+                        
+                        if epoch in eval_epochs:
+                            res,linear_state_dict = test(encoder_model,train_loader,val_loader,test_loader,
+                                       config['min_length'],max_length,config['num_classes'],
+                                       device,config['epochs_cls'],config['lr_cls'])
+                            test_result.append(res) 
+                            if res['best_val_loss'] < min_val_loss:
+                                min_val_loss = res['best_val_loss']
+                                min_val_loss_epoch = epoch
+                losses_all.append(losses)
+                test_result_all.append(test_result)
+                min_val_loss_epochs.append(min_val_loss_epoch)
+        
+        results['other_augmentations']['augmentation1'][atlas] = {}
+        results['other_augmentations']['augmentation1'][atlas]['losses'] = losses_all
+        results['other_augmentations']['augmentation1'][atlas]['epoch_results'] = test_result_all
+        results['other_augmentations']['augmentation1'][atlas]['min_val_loss_epoch'] = min_val_loss_epochs
+        results['other_augmentations']['augmentation1'][atlas]['names_train'] = names_train_all
+        results['other_augmentations']['augmentation1'][atlas]['names_val'] = names_val_all
+        results['other_augmentations']['augmentation1'][atlas]['names_test'] = names_test_all
+        
+        '''-----------------------Other augmentations - augmentation 2---------------------'''
+        '''------------------------------------KFold CV------------------------------------'''
+        
+        losses_all = []
+        test_result_all = []
+        min_val_loss_epochs = []
+        names_train_all = []
+        names_val_all = []
+        names_test_all = []
+        for i in range(10):
+            skf = StratifiedKFold(n_splits=10, shuffle = True, random_state=42+i)
+            for j, (train_index, test_index) in enumerate(skf.split(data, y)):
+                train_data = [data[i] for i in train_index]
+                test_data = [data[n] for n in test_index]
+                y_train = y[train_index]
+                y_test = y[test_index]
+                names_train = [names[n] for n in train_index]
+                names_test = [names[n] for n in test_index]
+                train_data, val_data, y_train, y_val, train_idx, val_idx = train_test_split(train_data,
+                                                                                            y_train, 
+                                                                                            np.arange(len(train_data)), 
+                                                                                            test_size=0.15, 
+                                                                                            random_state=42, 
+                                                                                            stratify=y_train)
+                names_val = [names_train[n] for n in val_idx]
+                names_train = [names_train[n] for n in train_idx]
+                train_data = train_DATA + train_data
+                y_train = np.concatenate((Y_train, y_train))
+                names_train = names_duplicate + names_train
+                train_dataset = ABIDEDataset(train_data, y_train)
+                train_loader = DataLoader(train_dataset, batch_size=config['batch_size'],shuffle=config['shuffle'])
+                val_dataset = ABIDEDataset(val_data, y_val)
+                val_loader = DataLoader(val_dataset, batch_size=config['batch_size'])
+                test_dataset = ABIDEDataset(test_data, y_test)
+                test_loader = DataLoader(test_dataset, batch_size=config['batch_size'])  
+                names_train_all.append(names_train)
+                names_val_all.append(names_val)
+                names_test_all.append(names_test)
+                
+                roi_num = test_data[0].shape[1]
+                encoder_model = VarCoNet(model_config, roi_num).to(device)
+                contrast_model = DualBranchContrast(loss=InfoNCE(tau=config['tau']),mode='L2L').to(device)
+                optimizer = Adam(encoder_model.parameters(), lr=config['lr'])
+                scheduler = LinearWarmupCosineAnnealingLR(
+                    optimizer=optimizer,
+                    warmup_start_lr = 1e-5,
+                    warmup_epochs=config['warm_up_epochs'],
+                    max_epochs=config['epochs'])
+                      
+                min_val_loss = 1000
+                test_result = []
+                losses = []
+                with tqdm(total=config['epochs'], desc='(T)') as pbar:
+                    for epoch in range(1,config['epochs']+1):
+                        total_loss = 0.0
+                        batch_count = 0                
+                        for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
+                            sample_inds = removeDuplicates(names_train,sample_inds)
+                            batch_list = [train_data[i] for i in sample_inds]
+                            batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
+                            batch_data = next(iter(batch_loader))
+                            batch_data = other_augment2(batch_data,train_length_limits,device)
+                            loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
+                            total_loss += loss
+                            batch_count += 1
+                        scheduler.step()
+                                
+                        average_loss = total_loss / batch_count if batch_count > 0 else float('nan')   
+                        losses.append(average_loss)
+                        pbar.set_postfix({'loss': average_loss})
+                        pbar.update()        
+                        
+                        if epoch in eval_epochs:
+                            res,linear_state_dict = test(encoder_model,train_loader,val_loader,test_loader,
+                                       config['min_length'],max_length,config['num_classes'],
+                                       device,config['epochs_cls'],config['lr_cls'])
+                            test_result.append(res) 
+                            if res['best_val_loss'] < min_val_loss:
+                                min_val_loss = res['best_val_loss']
+                                min_val_loss_epoch = epoch
+                losses_all.append(losses)
+                test_result_all.append(test_result)
+                min_val_loss_epochs.append(min_val_loss_epoch)
+        
+        results['other_augmentations']['augmentation2'][atlas] = {}
+        results['other_augmentations']['augmentation2'][atlas]['losses'] = losses_all
+        results['other_augmentations']['augmentation2'][atlas]['epoch_results'] = test_result_all
+        results['other_augmentations']['augmentation2'][atlas]['min_val_loss_epoch'] = min_val_loss_epochs
+        results['other_augmentations']['augmentation2'][atlas]['names_train'] = names_train_all
+        results['other_augmentations']['augmentation2'][atlas]['names_val'] = names_val_all
+        results['other_augmentations']['augmentation2'][atlas]['names_test'] = names_test_all
+        
         if config['save_results']:          
             if not os.path.exists(os.path.join(config['path_save'],'ablations','results_ABIDEI')):
                 os.makedirs(os.path.join(config['path_save'],'ablations','results_ABIDEI'),exist_ok=True)
@@ -409,6 +706,7 @@ def main(config):
 
 
 if __name__ == '__main__':   
+    
     parser = argparse.ArgumentParser(description='Run VarCoNet ablations on ABIDE I for ASD classification')
 
     parser.add_argument('--path_data', type=str,
@@ -433,7 +731,7 @@ if __name__ == '__main__':
                         help='Flag to save results')
 
     args = parser.parse_args()
-
+    
     config = {
         'path_data': args.path_data,
         'path_save': args.path_save,

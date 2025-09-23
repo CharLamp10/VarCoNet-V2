@@ -149,7 +149,7 @@ def bayesianOpt(trial):
                 pbar.update()        
                 
                 if epoch in eval_epochs:
-                    res = test(encoder_model,test_data1,test_data2,
+                    res = test(encoder_model,val_data1,val_data2,
                                len(test_winds),cfg['batch_size'],device)
                     print(np.mean(res[1]) + np.min(res[1]))
                     if np.mean(res[1]) + np.min(res[1]) > max_acc:
@@ -196,21 +196,17 @@ train_data = []
 for key in data:
     train_data.append(data[key])
 
-data = np.load(os.path.join(path,'test_data_HCP_' + config['atlas'] + '_1_resampled.npz'))
-test_data1 = []
+data = np.load(os.path.join(path,'val_data_HCP_' + config['atlas'] + '_1_resampled.npz'))
+val_data1 = []
 for key in data:
-    test_data1.append(data[key])
+    val_data1.append(data[key])
 
-data = np.load(os.path.join(path,'test_data_HCP_' + config['atlas'] + '_2_resampled.npz'))
-test_data2 = []
+data = np.load(os.path.join(path,'val_data_HCP_' + config['atlas'] + '_2_resampled.npz'))
+val_data2 = []
 for key in data:
-    test_data2.append(data[key])
-        
+    val_data2.append(data[key])
 
-test_data1 = test_data1[:200]
-test_data2 = test_data2[:200]       
-
-roi_num = test_data1[0].shape[1]
+roi_num = val_data1[0].shape[1]
 
 
 device = torch.device(config['device']) if torch.cuda.is_available() else torch.device("cpu")
@@ -221,15 +217,15 @@ max_length = train_length_limits[-1]
 test_winds = config['test_lengths']
 eval_epochs = config['eval_epochs']
 
-for i,data in enumerate(test_data1):
+for i,data in enumerate(val_data1):
     data = torch.from_numpy(data.astype(np.float32))
     data = test_augment(data, config['test_lengths'], config['test_num_winds'], max_length)
-    test_data1[i] = data
+    val_data1[i] = data
     
-for i,data in enumerate(test_data2):
+for i,data in enumerate(val_data2):
     data = torch.from_numpy(data.astype(np.float32))
     data = test_augment(data, config['test_lengths'], config['test_num_winds'], max_length)
-    test_data2[i] = data
+    val_data2[i] = data
 
 model_config = {}
 model_config['max_length'] = max_length

@@ -130,11 +130,10 @@ def main(config):
     results['VarCoNet']['test_probs'] = test_probs_varconet
     results['VarCoNet']['y_test'] = y
     
-    if config['save_results']:
-        if not os.path.exists(os.path.join(config['path_save'],'results_ABIDEII',config['atlas'])):
-            os.makedirs(os.path.join(config['path_save'],'results_ABIDEII',config['atlas']),exist_ok=True)
-        with open(os.path.join(config['path_save'],'results_ABIDEII',config['atlas'],'ABIDEII_results.pkl'), 'wb') as f:
-            pickle.dump(results,f)
+    if not os.path.exists(os.path.join(config['path_save'],'results_ABIDEII',config['atlas'])):
+        os.makedirs(os.path.join(config['path_save'],'results_ABIDEII',config['atlas']),exist_ok=True)
+    with open(os.path.join(config['path_save'],'results_ABIDEII',config['atlas'],'ABIDEII_results.pkl'), 'wb') as f:
+        pickle.dump(results,f)
     return results
         
 if __name__ == '__main__':   
@@ -144,24 +143,23 @@ if __name__ == '__main__':
                         help='Path to the dataset')
     parser.add_argument('--path_save', type=str,
                         help='Path to save results')
+    parser.add_argument('--atlas', type=str, choices=['AICHA', 'AAL'], default='AICHA',
+                        help='Atlas type to use')
     parser.add_argument('--batch_size', type=int, default=64,
                         help='Batch size')
     parser.add_argument('--device', type=str, default='cuda:0',
                         help='Device to use for training')
     parser.add_argument('--num_classes', type=int, default=2,
                         help='Number of classes for the classification')
-    parser.add_argument('--save_results', action='store_true',
-                        help='Flag to save results')
 
     args = parser.parse_args()
 
     config = {
         'path_data': args.path_data,
         'path_save': args.path_save,
-        'atlas': 'AICHA',
+        'atlas': args.atlas,
         'batch_size': args.batch_size,
         'num_classes': args.num_classes,
-        'save_results': args.save_results,
         'device': args.device,
         'model_config': {}
     }

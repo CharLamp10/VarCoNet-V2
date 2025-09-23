@@ -6,7 +6,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from model_scripts.classifier import MLP
     
-path_results = r'...' #here, enter the path where results have been saved
+path_results = r'/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results_revision'  #here, enter the path where results have been saved
 atlas = 'AICHA'       #choose atlas (AICHA, AAL)
 num_classes = 2
 folds = 10

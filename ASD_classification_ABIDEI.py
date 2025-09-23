@@ -31,23 +31,13 @@ def train(x, encoder_model, contrast_model, optimizer):
 def test(encoder_model, train_loader, val_loader, test_loader,
          min_length, max_length, num_classes, device, num_epochs, lr):
     encoder_model.eval()
-    with torch.no_grad():
+    with torch.no_grad():       
         outputs_train = []
         y_train = []
         for (x,y) in train_loader:
-            xs = []
-            ys = []
-            for (xi,yi) in zip(x,y):
-                xs.append(xi.unsqueeze(0).to(device))
-                ys.append(yi)
-                xi = test_augment_overlap(xi,[4,3,2,1],0.5,min_length,max_length,device)
-                xs.append(xi)
-                for i in range(xi.shape[0]):
-                    ys.append(yi)
-            xs = torch.cat(xs)
-            xs = xs.to(device)
-            y_train.append(torch.tensor(ys))
-            outputs_train.append(encoder_model(xs))
+            x = x.to(device)
+            y_train.append(y)
+            outputs_train.append(encoder_model(x))
         outputs_train = torch.cat(outputs_train, dim=0).clone().detach()
         y_train = torch.cat(y_train,dim=0).to(device)
         
@@ -197,7 +187,7 @@ def main(config):
                         batch_list = [train_data[i] for i in sample_inds]
                         batch_loader = DataLoader(batch_list, batch_size=len(batch_list), num_workers=4)
                         batch_data = next(iter(batch_loader))
-                        batch_data = augment(batch_data,train_length_limits,max_length,device)
+                        batch_data = augment(batch_data,train_length_limits,device)
                         loss,input_dim = train(batch_data,encoder_model,contrast_model,
                                                optimizer)
                         total_loss += loss
@@ -279,7 +269,7 @@ def main(config):
                     batch_list = [train_data[i] for i in sample_inds]
                     batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
                     batch_data = next(iter(batch_loader))
-                    batch_data = augment(batch_data,train_length_limits,max_length,device)
+                    batch_data = augment(batch_data,train_length_limits,device)
                     loss,input_dim = train(batch_data,encoder_model,contrast_model,
                                            optimizer)
                     total_loss += loss
@@ -336,6 +326,7 @@ def main(config):
 
 
 if __name__ == '__main__':   
+    
     parser = argparse.ArgumentParser(description='Run VarCoNet on ABIDE I for ASD classification')
 
     parser.add_argument('--path_data', type=str,
@@ -364,7 +355,7 @@ if __name__ == '__main__':
                         help='Flag to save results')
 
     args = parser.parse_args()
-
+    
     config = {
         'path_data': args.path_data,
         'path_save': args.path_save,

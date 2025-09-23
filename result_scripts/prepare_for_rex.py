@@ -19,13 +19,13 @@ def test_varconet(encoder_model,test_data1,test_data2,device):
         outputs = []
         for data in test_data1:
             data = torch.from_numpy(data).to(device)
-            outputs.append(encoder_model(data[:200,:].unsqueeze(0).float()))
+            outputs.append(encoder_model(data.unsqueeze(0).float()))
         outputs1 = torch.stack(outputs).cpu().numpy()
         
         outputs = []
         for data in test_data2:
             data = torch.from_numpy(data).to(device)
-            outputs.append(encoder_model(data[:200,:].unsqueeze(0).float()))
+            outputs.append(encoder_model(data.unsqueeze(0).float()))
         outputs2 = torch.stack(outputs).cpu().numpy()
         
     return outputs1, outputs2
@@ -72,13 +72,13 @@ def test_ae(model,test_data1,test_data2,D,device):
     with torch.no_grad():
         outputs = []
         for data in test_data1:
-            data = torch.from_numpy(data[:200,:]).to(device)
+            data = torch.from_numpy(data).to(device)
             outputs.append(model(data.unsqueeze(0).float()))
         outputs1 = torch.stack(outputs)
         
         outputs = []
         for data in test_data2:
-            data = torch.from_numpy(data[:200,:]).to(device)
+            data = torch.from_numpy(data).to(device)
             outputs.append(model(data.unsqueeze(0).float()))
         outputs2 = torch.stack(outputs)
     
@@ -115,12 +115,12 @@ def main(config):
     data = np.load(os.path.join(path,'test_data_HCP_' + config['atlas'] + '_1_resampled.npz'))
     test_data1 = []
     for key in data:
-        test_data1.append(data[key])
+        test_data1.append(data[key][:config['length'],:])
     
     data = np.load(os.path.join(path,'test_data_HCP_' + config['atlas'] + '_2_resampled.npz'))
     test_data2 = []
     for key in data:
-        test_data2.append(data[key])
+        test_data2.append(data[key][:config['length'],:])
             
     test_data1_varconet = test_data1
     test_data2_varconet = test_data2  
@@ -132,14 +132,12 @@ def main(config):
     test_data2_vae = []
     for i,data in enumerate(test_data1):
         data = torch.from_numpy(data.astype(np.float32))
-        data = data[:config['length'],:]
         corr = PCC(data.T)
         triu_indices = torch.triu_indices(corr.shape[0], corr.shape[0], offset=1)
         test_data1_vae.append(corr[triu_indices[0], triu_indices[1]])
         
     for i,data in enumerate(test_data2):
         data = torch.from_numpy(data.astype(np.float32))
-        data = data[:config['length'],:]
         corr = PCC(data.T)
         triu_indices = torch.triu_indices(corr.shape[0], corr.shape[0], offset=1)
         test_data2_vae.append(corr[triu_indices[0], triu_indices[1]])
@@ -193,7 +191,7 @@ def main(config):
     
     '''------------------------------------------VAE-K-SVD---------------------------------------'''  
     vae = Model_VAE(roi_num).to(device)
-    state_dict_vae = torch.load(os.path.join(config['path_save'],'models_HCP',config['atlas'],'VAE_KSVD','model.pth'))
+    state_dict_vae = torch.load(os.path.join(config['path_save'],'models_HCP',config['atlas'],'VAE_KSVD','min_loss_model.pth'))
     D = torch.load(os.path.join(config['path_save'],'models_HCP',config['atlas'],'VAE_KSVD','dictionary.pt'))
     vae.load_state_dict(state_dict_vae)
     out1_vae, out2_vae = test_vae(vae,test_data1_vae,test_data2_vae,D,device)
@@ -214,7 +212,7 @@ def main(config):
     
     '''------------------------------------------AE-K-SVD---------------------------------------'''    
     ae = Model_AE(config['length']).to(device)
-    state_dict_ae = torch.load(os.path.join(config['path_save'],'models_HCP',config['atlas'],'AE_KSVD','model_length' + str(config['length']) + '.pth'))
+    state_dict_ae = torch.load(os.path.join(config['path_save'],'models_HCP',config['atlas'],'AE_KSVD','min_loss_model_length' + str(config['length']) + '.pth'))
     D = torch.load(os.path.join(config['path_save'],'models_HCP',config['atlas'],'AE_KSVD','dictionary.pt'))
     ae.load_state_dict(state_dict_ae)
     out1_ae, out2_ae = test_ae(ae,test_data1_ae,test_data2_ae,D,device)

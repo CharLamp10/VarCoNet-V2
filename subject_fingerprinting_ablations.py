@@ -6,20 +6,27 @@ from tqdm import tqdm
 from torch.optim import Adam
 from utils import DualBranchContrast
 from pl_bolts.optimizers import LinearWarmupCosineAnnealingLR
-from model_scripts.VarCoNet import VarCoNet_noCNN
+from model_scripts.VarCoNet import VarCoNet_noCNN, VarCoNet_noTransformer, VarCoNet
 import os
 import pickle
 import copy
-from utils import test_augment, augment_hcp, removeDuplicates
+from utils import test_augment, augment, removeDuplicates, other_augment1, other_augment2
 import argparse  
 
 
 def train(x, encoder_model, contrast_model, optimizer):
     encoder_model.train()
     optimizer.zero_grad()
-    z1 = encoder_model(x[0])
-    z2 = encoder_model(x[1])
-    loss = contrast_model(z1, z2)
+    if len(x) == 2:
+        z1 = encoder_model(x[0])
+        z2 = encoder_model(x[1])
+        loss = contrast_model(z1, z2)
+    elif len(x) == 4:
+        z1 = encoder_model(x[0])
+        z2 = encoder_model(x[1])
+        z3 = encoder_model(x[2])
+        z4 = encoder_model(x[3])
+        loss = contrast_model(z1, z2) + contrast_model(z3, z4)
     loss.backward()
     optimizer.step()
     return loss.item(), z1.shape[1]
@@ -87,6 +94,11 @@ def test(encoder_model,test_data1,test_data2,num_winds,batch_size,device):
 
 def main(config):
     results = {}
+    results['no_CNN'] = {}
+    results['no_Transformer'] = {}
+    results['other_augmentations'] = {}
+    results['other_augmentations']['augmentation1'] = {}
+    results['other_augmentations']['augmentation2'] = {}
     for atlas in ['AAL', 'AICHA']:
         with open(f'best_params_VarCoNet_{atlas}.pkl', 'rb') as f:
             best_params = pickle.load(f)
@@ -160,6 +172,8 @@ def main(config):
         
         model_config = config['model_config']
         model_config['max_length'] = max_length
+        
+        '''-------------------------------------no CNN-------------------------------------'''
       
         encoder_model = VarCoNet_noCNN(model_config, roi_num).to(device)
         contrast_model = DualBranchContrast(loss=InfoNCE(tau=config['tau']),mode='L2L').to(device)   
@@ -183,7 +197,7 @@ def main(config):
                     batch_list = [train_data[i] for i in sample_inds]
                     batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
                     batch_data = next(iter(batch_loader))
-                    batch_data = augment_hcp(batch_data,config['train_length_limits'],device)
+                    batch_data = augment(batch_data,config['train_length_limits'],device)
                     loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
                     total_loss += loss
                     batch_count += 1
@@ -213,7 +227,176 @@ def main(config):
         max_val_acc_encoder_model.load_state_dict(max_val_acc_model)
         test_result = test(max_val_acc_encoder_model, test_data1, test_data2,
                                     len(config['test_winds']), config['batch_size'],device)
-        results[atlas] = test_result
+        results['no_CNN'][atlas] = test_result
+        
+        '''---------------------------------no Transformer---------------------------------'''
+      
+        encoder_model = VarCoNet_noTransformer(model_config, roi_num).to(device)
+        contrast_model = DualBranchContrast(loss=InfoNCE(tau=config['tau']),mode='L2L').to(device)   
+        optimizer = Adam(encoder_model.parameters(), lr=config['lr'])
+        scheduler = LinearWarmupCosineAnnealingLR(
+            optimizer=optimizer,
+            warmup_start_lr = 1e-5,
+            warmup_epochs=config['warm_up_epochs'],
+            max_epochs=config['epochs'])
+                  
+        max_val_acc = 0
+        losses = []
+        res_all = []
+        count = 0
+        with tqdm(total=config['epochs'], desc='(T)') as pbar:
+            for epoch in range(1,config['epochs']+1):
+                total_loss = 0.0
+                batch_count = 0                              
+                for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
+                    sample_inds = removeDuplicates(names,sample_inds)
+                    batch_list = [train_data[i] for i in sample_inds]
+                    batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
+                    batch_data = next(iter(batch_loader))
+                    batch_data = augment(batch_data,config['train_length_limits'],device)
+                    loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
+                    total_loss += loss
+                    batch_count += 1
+                scheduler.step()
+                average_loss = total_loss / batch_count if batch_count > 0 else float('nan')
+                losses.append(average_loss)
+                pbar.set_postfix({'loss': average_loss})
+                pbar.update()        
+                
+                if epoch in config['eval_epochs']:
+                    res = test(encoder_model,val_data1,val_data2,
+                               len(config['test_winds']),config['batch_size'],device)
+                    res_all.append(res)
+                    if np.mean(res[1]) + np.min(res[1]) > max_val_acc:
+                        max_val_acc = np.mean(res[1]) + np.min(res[1])
+                        max_val_acc_model = copy.deepcopy(encoder_model.state_dict())
+                        count = 0
+                    else:
+                        if epoch > config['eval_epochs'][0]:
+                            count += 1
+                if count >= config['early_stopping']:
+                    print('Early stopping')
+                    break
+                print('')
+    
+        max_val_acc_encoder_model = VarCoNet_noTransformer(model_config, roi_num).to(device)
+        max_val_acc_encoder_model.load_state_dict(max_val_acc_model)
+        test_result = test(max_val_acc_encoder_model, test_data1, test_data2,
+                                    len(config['test_winds']), config['batch_size'],device)
+        results['no_Transformer'][atlas] = test_result
+        
+        '''------------------------Other augmentations - augmentation 1--------------------'''
+      
+        encoder_model = VarCoNet(model_config, roi_num).to(device)
+        contrast_model = DualBranchContrast(loss=InfoNCE(tau=config['tau']),mode='L2L').to(device)   
+        optimizer = Adam(encoder_model.parameters(), lr=config['lr'])
+        scheduler = LinearWarmupCosineAnnealingLR(
+            optimizer=optimizer,
+            warmup_start_lr = 1e-5,
+            warmup_epochs=config['warm_up_epochs'],
+            max_epochs=config['epochs'])
+                  
+        max_val_acc = 0
+        losses = []
+        res_all = []
+        count = 0
+        with tqdm(total=config['epochs'], desc='(T)') as pbar:
+            for epoch in range(1,config['epochs']+1):
+                total_loss = 0.0
+                batch_count = 0                              
+                for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
+                    sample_inds = removeDuplicates(names,sample_inds)
+                    batch_list = [train_data[i] for i in sample_inds]
+                    batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
+                    batch_data = next(iter(batch_loader))
+                    batch_data = other_augment1(batch_data,config['train_length_limits'],device)
+                    loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
+                    total_loss += loss
+                    batch_count += 1
+                scheduler.step()
+                average_loss = total_loss / batch_count if batch_count > 0 else float('nan')
+                losses.append(average_loss)
+                pbar.set_postfix({'loss': average_loss})
+                pbar.update()        
+                
+                if epoch in config['eval_epochs']:
+                    res = test(encoder_model,val_data1,val_data2,
+                               len(config['test_winds']),config['batch_size'],device)
+                    res_all.append(res)
+                    if np.mean(res[1]) + np.min(res[1]) > max_val_acc:
+                        max_val_acc = np.mean(res[1]) + np.min(res[1])
+                        max_val_acc_model = copy.deepcopy(encoder_model.state_dict())
+                        count = 0
+                    else:
+                        if epoch > config['eval_epochs'][0]:
+                            count += 1
+                if count >= config['early_stopping']:
+                    print('Early stopping')
+                    break
+                print('')
+    
+        max_val_acc_encoder_model = VarCoNet(model_config, roi_num).to(device)
+        max_val_acc_encoder_model.load_state_dict(max_val_acc_model)
+        test_result = test(max_val_acc_encoder_model, test_data1, test_data2,
+                                    len(config['test_winds']), config['batch_size'],device)
+        results['other_augmentations']['augmentation1'][atlas] = test_result
+        
+        
+        '''------------------------Other augmentations - augmentation 2--------------------'''
+      
+        encoder_model = VarCoNet(model_config, roi_num).to(device)
+        contrast_model = DualBranchContrast(loss=InfoNCE(tau=config['tau']),mode='L2L').to(device)   
+        optimizer = Adam(encoder_model.parameters(), lr=config['lr'])
+        scheduler = LinearWarmupCosineAnnealingLR(
+            optimizer=optimizer,
+            warmup_start_lr = 1e-5,
+            warmup_epochs=config['warm_up_epochs'],
+            max_epochs=config['epochs'])
+                  
+        max_val_acc = 0
+        losses = []
+        res_all = []
+        count = 0
+        with tqdm(total=config['epochs'], desc='(T)') as pbar:
+            for epoch in range(1,config['epochs']+1):
+                total_loss = 0.0
+                batch_count = 0                              
+                for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
+                    sample_inds = removeDuplicates(names,sample_inds)
+                    batch_list = [train_data[i] for i in sample_inds]
+                    batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
+                    batch_data = next(iter(batch_loader))
+                    batch_data = other_augment2(batch_data,config['train_length_limits'],device)
+                    loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
+                    total_loss += loss
+                    batch_count += 1
+                scheduler.step()
+                average_loss = total_loss / batch_count if batch_count > 0 else float('nan')
+                losses.append(average_loss)
+                pbar.set_postfix({'loss': average_loss})
+                pbar.update()        
+                
+                if epoch in config['eval_epochs']:
+                    res = test(encoder_model,val_data1,val_data2,
+                               len(config['test_winds']),config['batch_size'],device)
+                    res_all.append(res)
+                    if np.mean(res[1]) + np.min(res[1]) > max_val_acc:
+                        max_val_acc = np.mean(res[1]) + np.min(res[1])
+                        max_val_acc_model = copy.deepcopy(encoder_model.state_dict())
+                        count = 0
+                    else:
+                        if epoch > config['eval_epochs'][0]:
+                            count += 1
+                if count >= config['early_stopping']:
+                    print('Early stopping')
+                    break
+                print('')
+    
+        max_val_acc_encoder_model = VarCoNet(model_config, roi_num).to(device)
+        max_val_acc_encoder_model.load_state_dict(max_val_acc_model)
+        test_result = test(max_val_acc_encoder_model, test_data1, test_data2,
+                                    len(config['test_winds']), config['batch_size'],device)
+        results['other_augmentations']['augmentation2'][atlas] = test_result
         
         
         if config['save_results']:
