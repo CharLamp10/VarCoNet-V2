@@ -10,7 +10,7 @@ from pl_bolts.optimizers import LinearWarmupCosineAnnealingLR
 import os
 import pickle
 import copy
-from utils import test_augment, augment_hcp, removeDuplicates
+from utils import test_augment, augment, removeDuplicates
 import argparse
 
 
@@ -176,7 +176,7 @@ def main(config):
                 batch_list = [train_data[i] for i in sample_inds]
                 batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
                 batch_data = next(iter(batch_loader))
-                batch_data = augment_hcp(batch_data,config['train_length_limits'],device)
+                batch_data = augment(batch_data,config['train_length_limits'],device)
                 loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
                 total_loss += loss
                 batch_count += 1

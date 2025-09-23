@@ -179,11 +179,10 @@ def main(config):
     results['VarCoNet']['percent_change'] = change_VarCoNet
     results['VarCoNet']['base_probs'] = ext_test_probs_VarCoNet
     
-    if config['save_results']:
-        if not os.path.exists(os.path.join(config['path_save'],'results_ABIDEI','predictions_stability')):
-            os.makedirs(os.path.join(config['path_save'],'results_ABIDEI','predictions_stability'),exist_ok=True)
-        with open(os.path.join(config['path_save'],'results_ABIDEI','predictions_stability','ABIDEI_BolT_VarCoNet_' + config['atlas'] + '.pkl'), 'wb') as f:
-            pickle.dump(results,f)
+    if not os.path.exists(os.path.join(config['path_save'],'results_ABIDEI','predictions_stability')):
+        os.makedirs(os.path.join(config['path_save'],'results_ABIDEI','predictions_stability'),exist_ok=True)
+    with open(os.path.join(config['path_save'],'results_ABIDEI','predictions_stability','ABIDEI_BolT_VarCoNet_' + config['atlas'] + '.pkl'), 'wb') as f:
+        pickle.dump(results,f)
     return results
         
 if __name__ == '__main__':   
@@ -193,6 +192,8 @@ if __name__ == '__main__':
                         help='Path to the dataset')
     parser.add_argument('--path_save', type=str,
                         help='Path to save results')
+    parser.add_argument('--atlas', type=str, choices=['AICHA', 'AAL'], default='AICHA',
+                        help='Atlas type to use')
     parser.add_argument('--batch_size', type=int, default=64,
                         help='Batch size')
     parser.add_argument('--device', type=str, default='cuda:0',
@@ -203,20 +204,17 @@ if __name__ == '__main__':
                         help='Length of test windows')
     parser.add_argument('--num_winds', type=int, default=3,
                         help='Number of test windows')
-    parser.add_argument('--save_results', action='store_true',
-                        help='Flag to save results')
 
     args = parser.parse_args()
 
     config = {
         'path_data': args.path_data,
         'path_save': args.path_save,
-        'atlas': 'AICHA',
+        'atlas': args.atlas,
         'batch_size': args.batch_size,
         'num_classes': args.num_classes,
         'test_winds': args.test_winds,
         'num_winds': args.num_winds,
-        'save_results': args.save_results,
         'device': args.device,
         'model_config': {}
     }

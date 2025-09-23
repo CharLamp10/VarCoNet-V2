@@ -1,3 +1,6 @@
+parent_path = r'/home/student1/Desktop/Charalampos_Lamprou/VarCoNetV2_extras'
+import sys
+sys.path.append(parent_path)
 from torch.utils.data import DataLoader
 import numpy as np
 import torch
@@ -5,19 +8,21 @@ import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm
 from torch.optim import Adam
-from utils import ABIDEDataset
-from model_scripts.competing_models import SeqenceModel
+from utils import FBNETGENLoader
+from FBNETGEN.model.model import FBNETGEN
+from FBNETGEN.train import BasicTrain
 import os
 import pickle
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split, StratifiedKFold
 import copy
 import argparse
+from pathlib import Path
     
 def train(x, y, encoder_model, optimizer, loss_func, num_classes):
     encoder_model.train()
     optimizer.zero_grad()
-    z = encoder_model(x)
+    z = encoder_model(x, x.shape[1])
     loss = loss_func(z, F.one_hot(y, num_classes=num_classes).float())
     loss.backward()
     optimizer.step()
@@ -57,6 +62,7 @@ def main(config):
     data = []
     for key in data_list:
         data.append(data_list[key][:config['length'],:].T)
+        
     
     names_unique, counts = np.unique(names, return_counts=True)
     names_dupl = names_unique[counts > 1]
@@ -105,15 +111,7 @@ def main(config):
     model_config = config['model_config'] 
     
     '''------------------------------------KFold CV------------------------------------'''
-    test_losses_all = []
-    test_aucs_all = []
-    train_losses = []
-    val_losses_all = []
-    val_aucs_all = []
-    val_probs_all = []
-    y_val_all = []
-    y_test_all = []
-    test_probs_all = []
+    '''
     names_train_all = []
     names_val_all = []
     names_test_all = []
@@ -137,97 +135,36 @@ def main(config):
             train_data = train_DATA + train_data
             y_train = np.concatenate((Y_train, y_train))
             names_train = names_duplicate + names_train
-            train_dataset = ABIDEDataset(train_data, y_train)
-            train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=config['shuffle'])
-            val_dataset = ABIDEDataset(val_data, y_val)
-            val_loader = DataLoader(val_dataset, batch_size=config['batch_size'])
-            test_dataset = ABIDEDataset(test_data, y_test)
-            test_loader = DataLoader(test_dataset, batch_size=config['batch_size'])  
+            train_loader, node_size, node_feature_size, timeseries = FBNETGENLoader(train_data,
+                                                                                    y_train,
+                                                                                    config['batch_size'])
+            val_loader,_,_,_ = FBNETGENLoader(val_data, y_val, config['batch_size'])
+            test_loader,_,_,_  = FBNETGENLoader(test_data, y_test, config['batch_size']) 
             names_train_all.append(names_train)
             names_val_all.append(names_val)
             names_test_all.append(names_test)
+            dataloaders = (train_loader, val_loader, test_loader)
+            config["seq_len"] = timeseries
+            config["node_size"] = node_size
+        
+            model = FBNETGEN(model_config, node_size, node_feature_size, config['length']).to(device)
+            optimizer = Adam(model.parameters(), lr=config['lr'],weight_decay=config['weight_decay'])
+            opts = (optimizer,)
             
-            roi_num = test_data[0].shape[0]
-            encoder_model = SeqenceModel(model_config, roi_num).to(device)
-            loss_func = nn.BCELoss()
-            optimizer = Adam(encoder_model.parameters(), lr=config['lr'])
+            loss_name = 'loss'
+            if config["group_loss"]:
+                loss_name = f"{loss_name}_group_loss"
+            if config["sparsity_loss"]:
+                loss_name = f"{loss_name}_sparsity_loss"
             
-            min_val_loss = 1000
-            losses = []
-            val_losses = []
-            test_losses = []
-            aucs = []
-            val_aucs = []
-            test_aucs = []
-            val_probs = []
-            test_probs = []
-            y_vals = []
-            y_tests = []
-            with tqdm(total=config['epochs'], desc='(T)') as pbar:
-                for epoch in range(1,config['epochs']+1):
-                    total_loss = 0.0
-                    total_auc = 0.0
-                    batch_count = 0                          
-                    for batch_idx, (batch_data, batch_labels) in enumerate(train_loader):            
-                        loss,auc = train(batch_data.to(device), batch_labels.to(device), 
-                                         encoder_model, optimizer, loss_func, config['num_classes'])
-                        total_loss += loss
-                        total_auc += auc
-                        batch_count += 1
-                    val_loss,val_auc,val_prob,y_val = test(encoder_model, val_loader,
-                                                           config['batch_size'], loss_func,
-                                                           config['num_classes'], device)
-                            
-                    average_loss = total_loss / batch_count if batch_count > 0 else float('nan')   
-                    average_auc = total_auc / batch_count if batch_count > 0 else float('nan') 
-                    losses.append(average_loss)
-                    val_losses.append(val_loss)
-                    aucs.append(average_auc)
-                    val_aucs.append(val_auc)
-                    val_probs.append(val_prob)
-                    y_vals.append(y_val)
-                    pbar.set_postfix({
-                        'loss': average_loss, 
-                        'auc': average_auc,
-                        'val_loss': val_loss, 
-                        'val_auc': val_auc
-                    })
-                    pbar.update()  
-                    if val_loss < min_val_loss:
-                        min_val_loss_model = copy.deepcopy(encoder_model.state_dict())
-                    test_loss,test_auc,test_prob,y_test = test(encoder_model, test_loader,
-                                                               config['batch_size'], loss_func,
-                                                               config['num_classes'], device)
-                    test_losses.append(test_loss)
-                    test_aucs.append(test_auc)
-                    test_probs.append(test_prob)
-                    y_tests.append(y_test)
+            folder_suffix = 'rs' + str(i) + '_fold' + str(j)
+            save_folder_name = Path(os.path.join(config['path_save'], 'results_ABIDEI', 'FBNETGEN', config['atlas'])) / folder_suffix
+            train_process = BasicTrain(config, model, opts, dataloaders, save_folder_name)
             
-            test_losses_all.append(test_losses)
-            test_aucs_all.append(test_aucs)
-            train_losses.append(losses)
-            val_losses_all.append(val_losses)
-            val_aucs_all.append(val_aucs)
-            val_probs_all.append(val_probs)
-            test_probs_all.append(test_probs)
-            y_val_all.append(y_vals)
-            y_test_all.append(y_tests)
-            
-            if config['save_models']:
-                if not os.path.exists(os.path.join(config['path_save'],'models_ABIDEI',config['atlas'],'FBNET')):
-                    os.makedirs(os.path.join(config['path_save'],'models_ABIDEI',config['atlas'],'FBNET'), exist_ok=True)
-                torch.save(min_val_loss_model, os.path.join(config['path_save'],'models_ABIDEI',config['atlas'],'FBNET','min_val_loss_model_rs' + str(i) + '_fold' + str(j) + '.pth'))
-    
+            train_process.train()
+    '''       
     
     '''------------------------------------Ext. test------------------------------------'''
-    ext_test_losses_all = []
-    ext_test_aucs_all = []
-    train_losses_ext = []
-    val_losses_all_ext = []
-    val_aucs_all_ext = []
-    val_probs_all_ext = []
-    y_val_all_ext = []
-    ext_test_probs_all = []
     names_train_ext_all = []
     names_val_ext_all = []
     for i in range(10):
@@ -242,123 +179,40 @@ def main(config):
         train_data = train_DATA + train_data
         y_train = np.concatenate((Y_train, y_train))
         names_train = names_duplicate + names_train
-        train_dataset = ABIDEDataset(train_data, y_train)
-        train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=config['shuffle'])
-        val_dataset = ABIDEDataset(val_data, y_val)
-        val_loader = DataLoader(val_dataset, batch_size=config['batch_size'])
-        test_dataset = ABIDEDataset(ext_test_data, y_ext_test)
-        test_loader = DataLoader(test_dataset, batch_size=config['batch_size'])  
+        train_loader, node_size, node_feature_size, timeseries = FBNETGENLoader(train_data,
+                                                                                y_train,
+                                                                                config['batch_size'])
+        val_loader,_,_,_ = FBNETGENLoader(val_data, y_val, config['batch_size'])
+        test_loader,_,_,_  = FBNETGENLoader(ext_test_data, y_ext_test, config['batch_size']) 
         names_train_ext_all.append(names_train)
         names_val_ext_all.append(names_val)
+        dataloaders = (train_loader, val_loader, test_loader)
+        config["seq_len"] = timeseries
+        config["node_size"] = node_size
         
-        roi_num = test_data[0].shape[0]
-        encoder_model = SeqenceModel(model_config, roi_num).to(device)
-        loss_func = nn.BCELoss()
-        optimizer = Adam(encoder_model.parameters(), lr=config['lr'])
+        model = FBNETGEN(model_config, node_size, node_feature_size, config['length']).to(device)
+        optimizer = Adam(model.parameters(), lr=config['lr'],weight_decay=config['weight_decay'])
+        opts = (optimizer,)
         
-        min_val_loss = 1000
-        losses = []
-        val_losses = []
-        test_losses = []
-        aucs = []
-        val_aucs = []
-        test_aucs = []
-        val_probs = []
-        test_probs = []
-        y_vals = []
-        y_tests = []
-        with tqdm(total=config['epochs'], desc='(T)') as pbar:
-            for epoch in range(1,config['epochs']+1):
-                total_loss = 0.0
-                total_auc = 0.0
-                batch_count = 0                          
-                for batch_idx, (batch_data, batch_labels) in enumerate(train_loader):            
-                    loss,auc = train(batch_data.to(device), batch_labels.to(device),
-                                     encoder_model, optimizer, 
-                                     loss_func, config['num_classes'])
-                    total_loss += loss
-                    total_auc += auc
-                    batch_count += 1
-                val_loss,val_auc,val_prob,y_val = test(encoder_model, val_loader,
-                                                       config['batch_size'], loss_func,
-                                                       config['num_classes'], device)
-                        
-                average_loss = total_loss / batch_count if batch_count > 0 else float('nan')   
-                average_auc = total_auc / batch_count if batch_count > 0 else float('nan') 
-                losses.append(average_loss)
-                val_losses.append(val_loss)
-                aucs.append(average_auc)
-                val_aucs.append(val_auc)
-                val_probs.append(val_prob)
-                y_vals.append(y_val)
-                pbar.set_postfix({
-                    'loss': average_loss, 
-                    'auc': average_auc,
-                    'val_loss': val_loss, 
-                    'val_auc': val_auc
-                })
-                pbar.update()  
-                if val_loss < min_val_loss:
-                    min_val_loss_model = copy.deepcopy(encoder_model.state_dict())
-                test_loss,test_auc,test_prob,y_ext_test = test(encoder_model, test_loader,
-                                                               config['batch_size'], loss_func,
-                                                               config['num_classes'], device)
-                test_losses.append(test_loss)
-                test_aucs.append(test_auc)
-                test_probs.append(test_prob)
-                y_tests.append(y_test)
+        loss_name = 'loss'
+        if config["group_loss"]:
+            loss_name = f"{loss_name}_group_loss"
+        if config["sparsity_loss"]:
+            loss_name = f"{loss_name}_sparsity_loss"
         
-        ext_test_losses_all.append(test_losses)
-        ext_test_aucs_all.append(test_aucs)
-        train_losses_ext.append(losses)
-        val_losses_all_ext.append(val_losses)
-        val_aucs_all_ext.append(val_aucs)
-        val_probs_all_ext.append(val_probs)
-        ext_test_probs_all.append(test_probs)
-        y_val_all_ext.append(y_vals)
+        folder_suffix = 'rs' + str(i)
+        save_folder_name = Path(os.path.join(config['path_save'], 'results_ABIDEI', 'FBNETGEN', config['atlas'])) / folder_suffix
+        train_process = BasicTrain(config, model, opts, dataloaders, save_folder_name)
         
-        if config['save_models']:
-            if not os.path.exists(os.path.join(config['path_save'],'models_ABIDEI',config['atlas'],'FBNET')):
-                os.makedirs(os.path.join(config['path_save'],'models_ABIDEI',config['atlas'],'FBNET'), exist_ok=True)
-            torch.save(min_val_loss_model, os.path.join(config['path_save'],'models_ABIDEI',config['atlas'],'FBNET','min_val_loss_model_rs' + str(i) + '.pth'))
-    
-    results = {}
-    results['losses'] = train_losses
-    results['val_losses'] = val_losses_all
-    results['test_losses'] = test_losses_all
-    results['test_aucs'] = test_aucs_all
-    results['val_aucs'] = val_aucs_all
-    results['val_probs'] = val_probs_all
-    results['test_probs'] = test_probs_all
-    results['y_val'] = y_val_all
-    results['y_test'] = y_test_all
-    results['names_train'] = names_train_all
-    results['names_val'] = names_val_all
-    results['names_test'] = names_test_all
-    results['losses_ext'] = train_losses_ext
-    results['val_losses_ext'] = val_losses_all_ext
-    results['ext_test_losses'] = ext_test_losses_all
-    results['ext_test_aucs'] = ext_test_aucs_all
-    results['val_aucs_ext'] = val_aucs_all_ext
-    results['val_probs_ext'] = val_probs_all_ext
-    results['ext_test_probs'] = ext_test_probs_all
-    results['y_val_ext'] = y_val_all_ext
-    results['y_ext_test'] = y_ext_test
-    results['names_val_ext'] = names_val_ext_all
-    results['names_ext_test'] = names_ext_test
-    if config['save_results']:            
-        if not os.path.exists(os.path.join(config['path_save'],'results_ABIDEI',config['atlas'])):
-            os.makedirs(os.path.join(config['path_save'],'results_ABIDEI',config['atlas']),exist_ok=True)
-        with open(os.path.join(config['path_save'],'results_ABIDEI',config['atlas'],'ABIDEI_FBNET_results.pkl'), "wb") as pickle_file:
-            pickle.dump(results, pickle_file)
-    return results
+        train_process.train()
+        
 
 if __name__ == '__main__':    
     parser = argparse.ArgumentParser(description='Run FBNETGEN on ABIDE I for ASD classification')
 
-    parser.add_argument('--path_data', type=str,
+    parser.add_argument('--path_data', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/SSL_FC_matrix_GNN_data_nilearn_0.11.1/ABIDEI/fmriprep',
                         help='Path to the dataset')
-    parser.add_argument('--path_save', type=str,
+    parser.add_argument('--path_save', type=str, default='/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results_revision',
                         help='Path to save results')
     parser.add_argument('--atlas', type=str, choices=['AICHA', 'AAL'], default='AICHA',
                         help='Atlas type to use')
@@ -366,12 +220,26 @@ if __name__ == '__main__':
                         help='Device to use for training')
     parser.add_argument('--length', type=int, default=120,
                         help='Length of input signals')
-    parser.add_argument('--epochs', type=int, default=250,
+    parser.add_argument('--extractor_type', type=str, default='cnn',
+                        help='Sequence model to process fMRI data (cnn or gru)')
+    parser.add_argument('--embedding_size', type=int, default=8,
+                        help='Embedding size for the sequence model')
+    parser.add_argument('--window_size', type=int, default=4,
+                        help='Kernel size for the 1D CNN')
+    parser.add_argument('--graph_generation', type=str, default='product',
+                        help='Method for generating th graph')
+    parser.add_argument('--epochs', type=int, default=500,
                         help='Number of epochs')
     parser.add_argument('--batch_size', type=int, default=128,
                         help='Batch size')
-    parser.add_argument('--lr', type=float, default=2e-5,
+    parser.add_argument('--lr', type=float, default=1e-4,
                         help='Learning rate')
+    parser.add_argument('--weight_decay', type=float, default=1e-4,
+                        help='Learning rate')
+    parser.add_argument('--group_loss', action='store_true')
+    parser.add_argument('--sparsity_loss', action='store_true')
+    parser.add_argument('--sparsity_loss_weight', type=float, default=1e-4)
+    parser.add_argument('--pure_gnn_graph', type=str, default='pearson')
     parser.add_argument('--num_classes', type=int, default=2,
                         help='Number of classes for the classification')
     parser.add_argument('--save_models', action='store_true',
@@ -389,6 +257,11 @@ if __name__ == '__main__':
         'length': args.length,
         'epochs': args.epochs,
         'lr': args.lr,
+        'weight_decay': args.weight_decay,
+        'group_loss': args.group_loss,
+        'sparsity_loss': args.sparsity_loss,
+        'sparsity_loss_weight': args.sparsity_loss_weight,
+        'pure_gnn_graph': args.pure_gnn_graph,
         'batch_size': args.batch_size,
         'num_classes': args.num_classes,
         'save_models': args.save_models,
@@ -397,9 +270,10 @@ if __name__ == '__main__':
         'model_config': {}
     }
     
-    config['model_config']['extractor_type'] = 'cnn'
-    config['model_config']['embedding_size'] = 8
-    config['model_config']['window_size'] = 4
+    config['model_config']['extractor_type'] = args.extractor_type
+    config['model_config']['embedding_size'] = args.embedding_size
+    config['model_config']['window_size'] = args.window_size
+    config['model_config']['graph_generation'] = args.graph_generation
 
     results = main(config)
 

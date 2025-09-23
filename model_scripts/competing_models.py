@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import Linear, Conv1d, MaxPool1d, GRU
+import torch.nn.functional as F
 import numpy as np
 import math
 
@@ -387,122 +388,5 @@ class DeepFMRI(nn.Module):
         x = self.fcn(x)
         x = self.clsn(x)
         return x
-    
-    
-class GruKRegion(nn.Module):
-
-    def __init__(self, kernel_size=128, layers=4, out_size=8, dropout=0.5):
-        super().__init__()
-        self.gru = GRU(1, kernel_size, layers,
-                       bidirectional=True, batch_first=True)
-
-        self.kernel_size = kernel_size
-
-        self.linear = nn.Sequential(
-            nn.Dropout(dropout),
-            Linear(kernel_size*2, kernel_size),
-            nn.LeakyReLU(negative_slope=0.2),
-            Linear(kernel_size, out_size)
-        )
-
-    def forward(self, raw):
-        b, k, d = raw.shape
-        x = raw.contiguous().view((b*k, 1, d))
-        x = torch.permute(x, (0,2,1))
-        x, h = self.gru(x)
-        x = x[:, -1, :]
-        x = x.view((b, k, -1))
-        x = self.linear(x)
-        return x
-
-
-class ConvKRegion(nn.Module):
-
-    def __init__(self, k=1, out_size=8, kernel_size=8, pool_size=16, time_series=512):
-        super().__init__()
-        self.conv1 = Conv1d(in_channels=k, out_channels=32,
-                            kernel_size=kernel_size, stride=2)
-
-        output_dim_1 = (time_series-kernel_size)//2+1
-
-        self.conv2 = Conv1d(in_channels=32, out_channels=32,
-                            kernel_size=8)
-        output_dim_2 = output_dim_1 - 8 + 1
-        self.conv3 = Conv1d(in_channels=32, out_channels=16,
-                            kernel_size=8)
-        output_dim_3 = output_dim_2 - 8 + 1
-        self.max_pool1 = MaxPool1d(pool_size)
-        output_dim_4 = output_dim_3 // pool_size * 16
-        self.in0 = nn.InstanceNorm1d(time_series)
-        self.in1 = nn.BatchNorm1d(32)
-        self.in2 = nn.BatchNorm1d(32)
-        self.in3 = nn.BatchNorm1d(16)
-
-        self.linear = nn.Sequential(
-            Linear(output_dim_4, 32),
-            nn.LeakyReLU(negative_slope=0.2),
-            Linear(32, out_size)
-        )
-
-    def forward(self, x):
-
-        b, k, d = x.shape
-
-        x = torch.transpose(x, 1, 2)
-
-        x = self.in0(x)
-
-        x = torch.transpose(x, 1, 2)
-        x = x.contiguous()
-
-        x = x.view((b*k, 1, d))
-
-        x = self.conv1(x)
-
-        x = self.in1(x)
-        x = self.conv2(x)
-
-        x = self.in2(x)
-        x = self.conv3(x)
-
-        x = self.in3(x)
-        x = self.max_pool1(x)
-
-        x = x.view((b, k, -1))
-
-        x = self.linear(x)
-
-        return x
-
-
-class SeqenceModel(nn.Module):
-
-    def __init__(self, model_config, roi_num=384, time_series=120):
-        super().__init__()
-
-        if model_config['extractor_type'] == 'cnn':
-            self.extract = ConvKRegion(
-                out_size=model_config['embedding_size'], kernel_size=model_config['window_size'],
-                time_series=time_series, pool_size=4, )
-        elif model_config['extractor_type'] == 'gru':
-            self.extract = GruKRegion(
-                out_size=model_config['embedding_size'], kernel_size=model_config['window_size'],
-                layers=model_config['num_gru_layers'], dropout=model_config['dropout'])
-        self.linear = nn.Sequential(
-            nn.Linear(roi_num*model_config['embedding_size'], 256),
-            nn.ReLU(),
-            nn.Linear(256,32),
-            nn.Dropout(0.5),
-            nn.ReLU(),
-            nn.Linear(32, 2),
-            nn.Softmax(dim=-1))
-
-    def forward(self, x):
-        x = self.extract(x)
-        x = x.view(x.shape[0],-1)
-        x = self.linear(x)
-        return x   
-    
-    
     
     
