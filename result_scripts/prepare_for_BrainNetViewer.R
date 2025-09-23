@@ -2,8 +2,8 @@ library(rsfcNet)
 library(RcppCNPy)
 library(data.table)
 
-path = "C:\\Users\\100063082\\Desktop\\VarCoNet_results\\results_ABIDEI\\feature_importance"
-path_save = "C:\\Users\\100063082\\Desktop\\VarCoNet_results\\results_ABIDEI\\feature_importance\\"
+path = "...\\results_ABIDEI\\feature_importance"
+path_save = "...\\results_ABIDEI\\feature_importance\\"
   
 path_varconet_aal_abide <- file.path(path, "AAL_feature_importance.csv")
 data_varconet_aal_abide <- as.matrix(fread(path_varconet_aal_abide))

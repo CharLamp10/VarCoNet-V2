@@ -26,8 +26,8 @@ def resample_signal(signal,site):
     return signal
 
 max_size = 320
-path_data_AICHA = r'E:\ABIDEII_AICHA_AAL_nilearn\fmriprep\ROISignals_AICHA'
-path_data_AAL = r'E:\ABIDEII_AICHA_AAL_nilearn\fmriprep\ROISignals_AAL'
+path_data_AICHA = r'E:\ABIDEII_nilearn\fmriprep\ROISignals_AICHA'
+path_data_AAL = r'E:\ABIDEII_nilearn\fmriprep\ROISignals_AAL'
 save_path = r'C:\Users\100063082\Desktop\SSL_FC_matrix_GNN_data\ABIDEII\fmriprep'
 if not os.path.exists(save_path):
     os.makedirs(save_path, exist_ok=True)
