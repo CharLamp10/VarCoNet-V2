@@ -43,8 +43,8 @@ rand_subjects = [dir1[i] for i in rand_inds]
 
 rand_subjects.extend(one_not_two)
 
-Time_AICHA = []
-Time_AAL = []
+signals_AICHA = []
+signals_AAL = []
 names_train = []
 for name in rand_subjects:
     name_path1_aicha = join(path_data_1_AICHA, name)
@@ -65,12 +65,12 @@ for name in rand_subjects:
                 feature_dir_aal = os.path.join(name_path1_aal, time_dir)  
                 temp = np.array(sio.loadmat(feature_dir_aicha)['ROISignals'])
                 if temp.shape[0] == 1200:
-                    Time_AICHA.append(temp)
+                    signals_AICHA.append(temp)
                     names_train.append(name)
                     flag = 1
                 temp = np.array(sio.loadmat(feature_dir_aal)['ROISignals'])
                 if temp.shape[0] == 1200:
-                    Time_AAL.append(temp)
+                    signals_AAL.append(temp)
         if flag == 0:
             if pe == 'RL':
                 pe = 'LR'
@@ -82,11 +82,11 @@ for name in rand_subjects:
                     feature_dir_aal = os.path.join(name_path1_aal, time_dir)   
                     temp = np.array(sio.loadmat(feature_dir_aicha)['ROISignals'])
                     if temp.shape[0] == 1200:
-                        Time_AICHA.append(temp)
+                        signals_AICHA.append(temp)
                         names_train.append(name)
                     temp = np.array(sio.loadmat(feature_dir_aal)['ROISignals'])
                     if temp.shape[0] == 1200:
-                        Time_AAL.append(temp)
+                        signals_AAL.append(temp)
     if os.path.exists(name_path2_aicha):
         pe = randint(0,1)
         if pe == 0:
@@ -100,12 +100,12 @@ for name in rand_subjects:
                 feature_dir_aal = os.path.join(name_path2_aal, time_dir)  
                 temp = np.array(sio.loadmat(feature_dir_aicha)['ROISignals'])
                 if temp.shape[0] == 1200:
-                    Time_AICHA.append(temp)
+                    signals_AICHA.append(temp)
                     names_train.append(name)
                     flag = 1
                 temp = np.array(sio.loadmat(feature_dir_aal)['ROISignals'])
                 if temp.shape[0] == 1200:
-                    Time_AAL.append(temp)
+                    signals_AAL.append(temp)
         if flag == 0:
             if pe == 'RL':
                 pe = 'LR'
@@ -117,11 +117,11 @@ for name in rand_subjects:
                     feature_dir_aal = os.path.join(name_path2_aal, time_dir)   
                     temp = np.array(sio.loadmat(feature_dir_aicha)['ROISignals'])
                     if temp.shape[0] == 1200:
-                        Time_AICHA.append(temp)
+                        signals_AICHA.append(temp)
                         names_train.append(name)   
                     temp = np.array(sio.loadmat(feature_dir_aal)['ROISignals'])
                     if temp.shape[0] == 1200:
-                        Time_AAL.append(temp) 
+                        signals_AAL.append(temp) 
 
 
 dir1 = os.listdir(path_data_1_AICHA)
@@ -132,10 +132,10 @@ test_dir2 =[x for x in dir2 if x not in names_train]
 
 
 test_names = list(set(test_dir1).intersection(test_dir2))
-Time1_AICHA = []
-Time2_AICHA = []
-Time1_AAL = []
-Time2_AAL = []
+signals1_AICHA = []
+signals2_AICHA = []
+signals1_AAL = []
+signals2_AAL = []
 for name in test_names:
     name_path1_aicha = join(path_data_1_AICHA, name)
     name_path2_aicha = join(path_data_2_AICHA, name)
@@ -155,11 +155,11 @@ for name in test_names:
                 feature_dir_aal = os.path.join(name_path1_aal, time_dir)
                 temp = np.array(sio.loadmat(feature_dir_aicha)['ROISignals'])
                 if temp.shape[0] == 1200:
-                    Time1_AICHA.append(temp)
+                    signals1_AICHA.append(temp)
                     flag = 1
                 temp = np.array(sio.loadmat(feature_dir_aal)['ROISignals'])
                 if temp.shape[0] == 1200:
-                    Time1_AAL.append(temp)
+                    signals1_AAL.append(temp)
         if flag == 0:
             if pe == 'RL':
                 pe = 'LR'
@@ -171,11 +171,11 @@ for name in test_names:
                     feature_dir_aal = os.path.join(name_path1_aal, time_dir) 
                     temp = np.array(sio.loadmat(feature_dir_aicha)['ROISignals'])
                     if temp.shape[0] == 1200:
-                        Time1_AICHA.append(temp)
+                        signals1_AICHA.append(temp)
                         flag = 1
                     temp = np.array(sio.loadmat(feature_dir_aal)['ROISignals'])
                     if temp.shape[0] == 1200:
-                        Time1_AAL.append(temp)
+                        signals1_AAL.append(temp)
 
     if os.path.exists(name_path2_aicha):
         pe = randint(0,1)
@@ -190,11 +190,11 @@ for name in test_names:
                 feature_dir_aal = os.path.join(name_path2_aal, time_dir)  
                 temp = np.array(sio.loadmat(feature_dir_aicha)['ROISignals'])
                 if temp.shape[0] == 1200:
-                    Time2_AICHA.append(temp)
+                    signals2_AICHA.append(temp)
                     flag = 1
                 temp = np.array(sio.loadmat(feature_dir_aal)['ROISignals'])
                 if temp.shape[0] == 1200:
-                    Time2_AAL.append(temp)
+                    signals2_AAL.append(temp)
         if flag == 0:
             if pe == 'RL':
                 pe = 'LR'
@@ -206,25 +206,25 @@ for name in test_names:
                     feature_dir_aal = os.path.join(name_path2_aal, time_dir)  
                     temp = np.array(sio.loadmat(feature_dir_aicha)['ROISignals'])
                     if temp.shape[0] == 1200:
-                        Time2_AICHA.append(temp)
+                        signals2_AICHA.append(temp)
                         flag = 1
                     temp = np.array(sio.loadmat(feature_dir_aal)['ROISignals'])
                     if temp.shape[0] == 1200:
-                        Time2_AAL.append(temp)
-    if len(Time1_AICHA) > len(Time2_AICHA):
-        Time1_AICHA = Time1_AICHA[:-1]
-        Time1_AAL = Time1_AAL[:-1]
-    if len(Time2_AICHA) > len(Time1_AAL):
-        Time2_AICHA = Time2_AICHA[:-1]
-        Time2_AAL = Time2_AAL[:-1]
+                        signals2_AAL.append(temp)
+    if len(signals1_AICHA) > len(signals2_AICHA):
+        signals1_AICHA = signals1_AICHA[:-1]
+        signals1_AAL = signals1_AAL[:-1]
+    if len(signals2_AICHA) > len(signals1_AAL):
+        signals2_AICHA = signals2_AICHA[:-1]
+        Tsignals2_AAL = signals2_AAL[:-1]
                         
                         
-np.savez(os.path.join(path_save,'train_data_HCP_AICHA'),*Time_AICHA)
-np.savez(os.path.join(path_save,'train_data_HCP_AAL'),*Time_AAL)
-np.savez(os.path.join(path_save,'test_data_HCP_AICHA_1'),*Time1_AICHA)
-np.savez(os.path.join(path_save,'test_data_HCP_AICHA_2'),*Time2_AICHA)
-np.savez(os.path.join(path_save,'test_data_HCP_AAL_1'),*Time1_AAL)
-np.savez(os.path.join(path_save,'test_data_HCP_AAL_2'),*Time2_AAL)
+np.savez(os.path.join(path_save,'train_data_HCP_AICHA'),*signals_AICHA)
+np.savez(os.path.join(path_save,'train_data_HCP_AAL'),*signals_AAL)
+np.savez(os.path.join(path_save,'test_data_HCP_AICHA_1'),*signals1_AICHA)
+np.savez(os.path.join(path_save,'test_data_HCP_AICHA_2'),*signals2_AICHA)
+np.savez(os.path.join(path_save,'test_data_HCP_AAL_1'),*signals1_AAL)
+np.savez(os.path.join(path_save,'test_data_HCP_AAL_2'),*signals2_AAL)
 
 with open(os.path.join(path_save,'names_train.txt'), 'w') as f:
     for item in names_train:
