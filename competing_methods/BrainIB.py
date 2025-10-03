@@ -1,4 +1,4 @@
-parent_path = r'/home/student1/Desktop/Charalampos_Lamprou/VarCoNetV2_extras'
+parent_path = r'/.../baselines'
 import sys
 sys.path.append(parent_path)
 from torch_geometric.loader import DataLoader
