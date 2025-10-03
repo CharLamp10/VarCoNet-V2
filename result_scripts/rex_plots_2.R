@@ -2,7 +2,7 @@ library(data.table)
 library(ReX)
 library(ggplot2)
 
-path = "...\\VarCoNet_results\\ReX_files"
+path = "...\\results_HCP\\ReX_files"
 path_save = "...\\plots"
 
 path_pcc <- file.path(path, "PCC_ICC_80_samples.csv")
@@ -20,15 +20,15 @@ data_vae$group <- "(Lu et al., 2024)"
 data_ae$group <- "(Cai et al., 2021)"
 
 combined_data <- rbind(data_pcc, data_varconet)
-p_varconet_pcc_1 <- rex_plot.var.field.n(combined_data, size.point = 2, alpha.density = 0.3)
-ggsave("C:\\Users\\100063082\\Desktop\\VarCoNet-V2\\paper_plots\\VarCoNet_PCC.png")
+p_varconet_pcc_1 <- rex_plot.var.field.n(combined_data, size.point = 2, alpha.density = 0.3, show.icc_slope=FALSE)
+ggsave(file.path(path_save,"VarCoNet_PCC.png"))
 df_VarPairedComp <- icc_gradient_flow(as.matrix(data_varconet[,"sigma2_w"]), as.matrix(data_varconet[,"sigma2_b"]), as.matrix(data_pcc[,"sigma2_w"]), as.matrix(data_pcc[,"sigma2_b"]))
 df_VarPairedComp$contrast <- "VarCoNet-V2 - PCC"
 p_varconet_pcc_2 <- rex_plot.icc.gradient.norm(df_VarPairedComp,show.contour = FALSE)
 ggsave(file.path(path_save, "VarCoNet_PCC_grad_norm.png"))
 
 combined_data <- rbind(data_vae, data_varconet)
-p_varconet_vae_1 <- rex_plot.var.field.n(combined_data, size.point = 2, alpha.density = 0.3)
+p_varconet_vae_1 <- rex_plot.var.field.n(combined_data, size.point = 2, alpha.density = 0.3, show.icc_slope=FALSE)
 ggsave(file.path(path_save, "VarCoNet_VAE.png"))
 df_VarPairedComp <- icc_gradient_flow(as.matrix(data_varconet[,"sigma2_w"]), as.matrix(data_varconet[,"sigma2_b"]), as.matrix(data_vae[,"sigma2_w"]), as.matrix(data_vae[,"sigma2_b"]))
 df_VarPairedComp$contrast <- "VarCoNet-V2 - VAE"
@@ -36,7 +36,7 @@ p_varconet_vae_2 <- rex_plot.icc.gradient.norm(df_VarPairedComp,show.contour = F
 ggsave(file.path(path_save,"VarCoNet_VAE_grad_norm.png"))
 
 combined_data <- rbind(data_ae, data_varconet)
-p_varconet_ae_1 <- rex_plot.var.field.n(combined_data, size.point = 2, alpha.density = 0.3)
+p_varconet_ae_1 <- rex_plot.var.field.n(combined_data, size.point = 2, alpha.density = 0.3, show.icc_slope=FALSE)
 ggsave(file.path(path_save, "VarCoNet_AE.png"))
 df_VarPairedComp <- icc_gradient_flow(as.matrix(data_varconet[,"sigma2_w"]), as.matrix(data_varconet[,"sigma2_b"]), as.matrix(data_ae[,"sigma2_w"]), as.matrix(data_ae[,"sigma2_b"]))
 df_VarPairedComp$contrast <- "VarCoNet-V2 - AE"

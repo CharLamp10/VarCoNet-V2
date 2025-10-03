@@ -40,10 +40,13 @@ def resample_signal(signal,file,site):
         signal = resample(signal,new_len)
     return signal,duration
 
+use_ICA_AOMA = True
 max_size = 320
-path_data_AICHA = r'E:\ABIDEI_AICHA_AAL_nilearn\fmriprep\ROISignals_AICHA'
-path_data_AAL = r'E:\ABIDEI_AICHA_AAL_nilearn\fmriprep\ROISignals_AAL'
-save_path = r'C:\Users\100063082\Desktop\SSL_FC_matrix_GNN_data\ABIDEI\fmriprep'
+if use_ICA_AOMA:
+    path_data_AICHA = r'E:\ABIDEI_nilearn_0.11.1\fmriprep\ROISignals_AICHA'
+    path_data_AAL = r'E:\ABIDEI_nilearn_0.11.1\fmriprep\ROISignals_AAL'
+    save_path = r'C:\Users\100063082\Desktop\SSL_FC_matrix_GNN_data_nilearn_0.11.1\ABIDEI\fmriprep'
+
 path_phenotypic = r'C:\Users\100063082\Desktop\prepare_ADHD200_ABIDE_phenotypics\Phenotypic_V1_0b_preprocessed1.csv'
 
 

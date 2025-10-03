@@ -2,7 +2,7 @@ library(data.table)
 library(ReX)
 library(ggplot2)
 
-path = "...\\VarCoNet_results\\ReX_files"
+path = "...\\results_HCP\\ReX_files"
 
 #PCC
 path_pcc <- file.path(path, "rex_AICHA_PCC_80_samples.csv")
@@ -31,7 +31,7 @@ rex_plot.var.field(df_icc_varconet, size.point = 2, alpha.density = 0.3, color.p
 write.csv(df_icc_varconet, file = file.path(path, "VarCoNet_ICC_80_samples.csv"), row.names = FALSE)
 
 #VAE
-path_vae <- file.path(path, "rex_AICHA_VAE_80_samples.csv")
+path_vae <- file.path(path, "rex_AICHA_VAE_KSVD_80_samples.csv")
 data_vae <- fread(path_vae)
 x <- data_vae[, 4:ncol(data_vae)]
 sub <- data_vae[,2]
@@ -45,7 +45,7 @@ write.csv(df_icc_vae, file = file.path(path, "VAE_ICC_80_samples.csv"), row.name
 
 
 #AE
-path_ae <- file.path(path, "rex_AICHA_AE_80_samples.csv")
+path_ae <- file.path(path, "rex_AICHA_AE_KSVD_80_samples.csv")
 data_ae <- fread(path_ae)
 x <- data_ae[, 4:ncol(data_ae)]
 sub <- data_ae[,2]
