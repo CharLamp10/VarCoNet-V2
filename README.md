@@ -101,12 +101,11 @@ To train and test the baselines, please download the folder "baselines" from the
 
 # Train and test AE-KSVD (Cai et al. 2021) and VAE-KSVD (Lu et al. 2024), PCC for subject fingerprinting using HCP data
 **For all following scripts, it is important to use the same --path_save!!!**
-To apply AE-KSVD, VAE-KSVD, PCC on the HCP data one can run:
+Before running these methods, open their corresponding scripts (located at the competing_methods folder) and at the first line, change the parent_path to .../baselines/ksvd-sparse-dictionary (based on where you saved the baselines folder). Then, to apply AE-KSVD, VAE-KSVD, PCC on the HCP data one can run:
 ```python
 python -m competing_methods.AE_KSVD \ 
   --path_data .../HCP \
   --path_save .../FOLDER \
-  --path_baselines .../baselines \
   --atlas AICHA \
   --save_models \
   --save_results
@@ -115,7 +114,6 @@ python -m competing_methods.AE_KSVD \
 python -m competing_methods.VAE_KSVD \ 
   --path_data .../HCP \
   --path_save .../FOLDER \
-  --path_baselines .../baselines \
   --atlas AICHA \
   --save_models \
   --save_results
@@ -130,12 +128,11 @@ python -m competing_methods.PCC \
 ```
 
 # Train and test BolT (and A-GCL, BrainIB, UCGL, BAnD, GCDA, FBNETGEN) on ASD classification using ABIDE I data
-To apply BolT on the ABIDE I data one can navigate to the parent folder (VarCoNet-V2) and run:
+Before running these methods, open their corresponding scripts (located at the competing_methods folder) and at the first line, change the parent_path to .../baselines (based on where you saved the baselines folder). To apply BolT (and the rest) on the ABIDE I data one can navigate to the parent folder (VarCoNet-V2) and run:
 ```python
 python -m competing_methods.BolT \ 
   --path_data .../ABIDEI \
   --path_save .../FOLDER \
-  --path_baselines .../baselines \
   --atlas AICHA \
   --save_models \
   --save_results
