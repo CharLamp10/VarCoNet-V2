@@ -5,8 +5,8 @@ import pickle
 atlas = 'AICHA'
 folds = 10
 seeds = 10
-path = r'/home/student1/Desktop/Charalampos_Lamprou/VarCoNetV2_extras/BrainNetworkTransformerSpyder/source/result'
-path_save = r'/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results_revision'
+path = r'/.../baselines/BrainNetworkTransformerSpyder/source/result' #In the three dots, add the path to the "baselines" folder
+path_save = r'' #the main path where all results are saved (same as in other scripts)
 val_losses_all = []
 val_aucs_all = []
 test_losses_all = []

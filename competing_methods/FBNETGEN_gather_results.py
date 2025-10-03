@@ -6,9 +6,9 @@ import pickle
 atlas = 'AAL'
 folds = 10
 seeds = 10
-path = os.path.join('/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results_revision/results_ABIDEI/FBNETGEN', atlas)
-path_save = os.path.join('/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results_revision','results_ABIDEI', atlas)
-path_save_model = os.path.join('/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results_revision/models_ABIDEI', atlas, 'FBNETGEN')
+path = os.path.join('...', 'FBNETGEN', atlas) #add the path where results are saved from the fbnetgen script
+path_save = os.path.join('...','results_ABIDEI', atlas) #add the main path where all results are saved (same as in other scripts)
+path_save_model = os.path.join('...','models_ABIDEI', atlas, 'FBNETGEN') #add the main path where all results are saved (same as in other scripts)
 val_losses_all = []
 val_aucs_all = []
 test_losses_all = []
@@ -26,7 +26,7 @@ for rs in range(seeds):
         new_name = 'model_rs' + str(rs) + '_fold' + str(fold) + '.pt'
         target_path = os.path.join(new_folder, new_name)
         os.makedirs(new_folder, exist_ok=True)
-        #shutil.move(path_model, target_path)
+        shutil.move(path_model, target_path)
         res = np.load(path_res, allow_pickle=True)
         val_losses = []
         val_aucs = []
@@ -85,7 +85,7 @@ for rs in range(seeds):
     new_name = 'model_rs' + str(rs) + '.pt'
     target_path = os.path.join(new_folder, new_name)
     os.makedirs(new_folder, exist_ok=True)
-    #shutil.move(path_model, target_path)
+    shutil.move(path_model, target_path)
     res = np.load(path_res, allow_pickle=True)
     val_losses = []
     val_aucs = []

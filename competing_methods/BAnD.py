@@ -1,4 +1,4 @@
-parent_path = r'/home/student1/Desktop/Charalampos_Lamprou/VarCoNetV2_extras/BAnD'
+parent_path = r'/home/student1/Desktop/Charalampos_Lamprou/VarCoNetV2_extras'
 import sys
 sys.path.append(parent_path)
 from torch.utils.data import DataLoader
@@ -15,8 +15,8 @@ import pickle
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split, StratifiedKFold
 import copy
-from band.models.models import S3ConvXTransFC
-from band.models.TransformerFM import BertConfig
+from BAnD.band.models.models import S3ConvXTransFC
+from BAnD.band.models.TransformerFM import BertConfig
 import argparse  
 
     

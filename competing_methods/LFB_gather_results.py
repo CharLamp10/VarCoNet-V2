@@ -7,8 +7,8 @@ import torch.nn.functional as F
 from torch import from_numpy
 from sklearn.metrics import roc_auc_score
 
-path_LFB_results = r'/home/student1/Desktop/Charalampos_Lamprou/VarCoNetV2_extras/learning-from-brains/results/models/downstream/ABIDE'
-path_save = r'/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results'
+path_LFB_results = r'/.../baselines/learning-from-brains/results/models/downstream/ABIDE' #In the three dots, add the path to the "baselines" folder
+path_save = r'' #the main path where all results are saved (same as in other scripts)
 
 soft = Softmax(dim=-1)
 loss_func = BCELoss()
