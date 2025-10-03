@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 from statannotations.Annotator import Annotator
 
-path_results = r'/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results_revision' #here, enter the path where results have been saved
+path_results = r'' #here, enter the path where results have been saved
 
 if not os.path.exists(os.path.join(path_results,"plots")):
     os.mkdir(os.path.join(path_results,"plots"))

@@ -5,7 +5,7 @@ from scipy.stats import ttest_ind
 from sklearn.metrics import f1_score,roc_curve
 
 atlas = 'AAL'    #choose atlas (AICHA, AAL)
-save_path = r'/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results_revision' #here, enter the path where the results are saved
+save_path = r'' #here, enter the path where the results are saved
     
 with open(os.path.join(save_path,'results_ABIDEI',atlas,'ABIDEI_VarCoNet_results.pkl'), 'rb') as f:
     test_result_VarCoNet = pickle.load(f)

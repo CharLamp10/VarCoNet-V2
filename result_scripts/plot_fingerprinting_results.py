@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-path_results = r'/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results_revision' #here, enter the path where results have been saved
+path_results = r'' #here, enter the path where results have been saved
 atlas = 'AICHA'         #choose atlas (AICHA, AAL)
 
 if not os.path.exists(os.path.join(path_results,"plots")):
