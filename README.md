@@ -96,17 +96,79 @@ python -m ASD_classification_ablations \
 ```
 There are additional input arguments that one can set. For more information check the script.
 
-# Train and test BolT on ASD classification using ABIDE I data
-To apply BolT on the ABIDE I data one can run:
+# Train and test Baselines
+To train and test the baselines, please download the folder "baselines" from the following link and place it anywhere in your pc. This folder contains the implementations of A-GCL, UCGL, GCDA, BrainIB, BrainNetworkTransformer, FBNETGEN, BAnD, and learning-from-brains. Their scripts have been slightly modified to enable consistency across evaluation settings (K-fold CV), output structure etc. The important parts of the scripts e.g. model archtecture, training details etc have not been altered.
+
+# Train and test AE-KSVD (Cai et al. 2021) and VAE-KSVD (Lu et al. 2024), PCC for subject fingerprinting using HCP data
+**For all following scripts, it is important to use the same --path_save!!!**
+To apply AE-KSVD, VAE-KSVD, PCC on the HCP data one can run:
 ```python
-python -m competing_methods.bolt \ 
+python -m competing_methods.AE_KSVD \ 
+  --path_data .../HCP \
+  --path_save .../FOLDER \
+  --path_baselines .../baselines \
+  --atlas AICHA \
+  --save_models \
+  --save_results
+```
+```python
+python -m competing_methods.VAE_KSVD \ 
+  --path_data .../HCP \
+  --path_save .../FOLDER \
+  --path_baselines .../baselines \
+  --atlas AICHA \
+  --save_models \
+  --save_results
+```
+```python
+python -m competing_methods.PCC \ 
+  --path_data .../HCP \
+  --path_save .../FOLDER \
+  --atlas AICHA \
+  --save_models \
+  --save_results
+```
+
+# Train and test BolT (and A-GCL, BrainIB, UCGL, BAnD, GCDA, FBNETGEN) on ASD classification using ABIDE I data
+To apply BolT on the ABIDE I data one can navigate to the parent folder (VarCoNet-V2) and run:
+```python
+python -m competing_methods.BolT \ 
+  --path_data .../ABIDEI \
+  --path_save .../FOLDER \
+  --path_baselines .../baselines \
+  --atlas AICHA \
+  --save_models \
+  --save_results
+```
+There are additional input arguments that one can set. To run A-GCL, BrainIB, UCGL, BAnD, GCDA, FBNETGEN you can use the exact same format but change BolT to: A_GCL, BrainIB, UCGL, BAnD, GCDA, fbnetgen. Although the basic input arguments are the same, each method has different architecture and training arguments. If you want to alter them and not proceed with the defaults please check the scripts and the original papers for more information. Note: For FBNETGEN, one has to run the script: FBNETGEN_gather_results.py after running fbnetgen.py.
+
+
+# Train and test CVFormer and DeepFMRI on ASD classification using ABIDE I data
+To apply CVFormer and DeepFMRI on the ABIDE I data one can navigate to the parent folder (VarCoNet-V2) and run:
+```python
+python -m competing_methods.CVFormer \ 
   --path_data .../ABIDEI \
   --path_save .../FOLDER \
   --atlas AICHA \
   --save_models \
   --save_results
 ```
-There are additional input arguments that one can set. For more information check the script. Other competing methods can also be run using a similar format.
+```python
+python -m competing_methods.DeepFMRI \ 
+  --path_data .../ABIDEI \
+  --path_save .../FOLDER \
+  --atlas AICHA \
+  --save_models \
+  --save_results
+```
+There are additional input arguments that one can set. For more information check the scripts.
+
+# Train and test BrainNetworkTransformer on ASD classification using ABIDE I data
+To apply BrainNetworkTransformer on the ABIDE I data one should first open the ABIDE.yaml file located at ".../baselines/BrainNetworkTransformerSpyder/source/conf" and enter the path to the baseline for the variable path. For K-Fold CV set Kfold variable to 10, while for the external testing set the Kfold variable to 0. Then navigate to ".../baselines/BrainNetworkTransformerSpyder" and run:
+```python
+python -m source
+```
+After running this for both Kfold=10 and Kfold=0, run the gather_BNT_results located at the competing_methods folder. For more information check the scripts.
 
 # Exteral testing on ABIDE II
 To test BolT and VarCoNet on ABIDE II run:
