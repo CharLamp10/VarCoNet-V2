@@ -139,7 +139,7 @@ python -m competing_methods.BolT \
   --save_models \
   --save_results
 ```
-There are additional input arguments that one can set. To run A-GCL, BrainIB, UCGL, BAnD, GCDA, FBNETGEN you can use the exact same format but change BolT to: A_GCL, BrainIB, UCGL, BAnD, GCDA, fbnetgen. Although the basic input arguments are the same, each method has different architecture and training arguments. If you want to alter them and not proceed with the defaults please check the scripts and the original papers for more information. Note: For FBNETGEN, one has to run the script: FBNETGEN_gather_results.py after running fbnetgen.py.
+There are additional input arguments that one can set. To run A-GCL, BrainIB, UCGL, BAnD, GCDA, FBNETGEN you can use the exact same format but change BolT to: A_GCL, BrainIB, UCGL, BAnD, GCDA, fbnetgen, respectively. Although the basic input arguments are the same, each method has different architecture and training arguments. If you want to alter them and not proceed with the defaults please check the scripts and the original papers for more information. Note: For FBNETGEN, one has to run the script: FBNETGEN_gather_results.py after running fbnetgen.py.
 
 
 # Train and test CVFormer and DeepFMRI on ASD classification using ABIDE I data
