@@ -35,6 +35,8 @@ The two atlases (AICHA and AAL3) can be downloaded from (https://www.gin.cnrs.fr
 - ABIDE I. Run the script data_preparations/prepare_ABIDEI_data.py using as inputs the path of the output directory from the data_preparations/parcellate_ABIDEI.py and an output directory
 - ABIDE II. Run the script data_preparations/prepare_ABIDEII_data.py using as inputs the path of the output directory from the data_preparations/parcellate_ABIDEII.py and an output directory
 
+For exact replication of our results, one can download our already prepared data from: https://drive.google.com/drive/folders/1B4ebLvEnvL8R_g976vEHiSo0voIFin9I?usp=sharing 
+
 # Run Bayesian optimization to find suitable values for hyperparameters
 One can run the VarCoNet_BO.py script. This script saves two .pkl files, one containing the best values for the examined hyperparameters and one containing information for all trials. This script requires the following inputs:
 ```python
@@ -97,7 +99,7 @@ python -m ASD_classification_ablations \
 There are additional input arguments that one can set. For more information check the script.
 
 # Train and test Baselines
-To train and test the baselines, please download the folder "baselines" from the following link and place it anywhere in your pc. This folder contains the implementations of A-GCL, UCGL, GCDA, BrainIB, BrainNetworkTransformer, FBNETGEN, BAnD, and learning-from-brains. Their scripts have been slightly modified to enable consistency across evaluation settings (K-fold CV), output structure etc. The important parts of the scripts e.g. model archtecture, training details etc have not been altered.
+To train and test the baselines, please download the folder "baselines" from the following link: https://drive.google.com/drive/folders/1BIxI40fW95M8ULRgrMsa6T-G72pVvs4_?usp=sharing and place it anywhere in your pc. This folder contains the implementations of A-GCL, UCGL, GCDA, BrainIB, BrainNetworkTransformer, FBNETGEN, BAnD, and learning-from-brains. Their scripts have been slightly modified to enable consistency across evaluation settings (K-fold CV), output structure etc. The important parts of the scripts e.g. model archtecture, training details etc have not been altered.
 
 # Train and test AE-KSVD (Cai et al. 2021) and VAE-KSVD (Lu et al. 2024), PCC for subject fingerprinting using HCP data
 **For all following scripts, it is important to use the same --path_save!!!**
@@ -137,7 +139,7 @@ python -m competing_methods.BolT \
   --save_models \
   --save_results
 ```
-There are additional input arguments that one can set. To run A-GCL, BrainIB, UCGL, BAnD, GCDA, FBNETGEN you can use the exact same format but change BolT to: A_GCL, BrainIB, UCGL, BAnD, GCDA, fbnetgen. Although the basic input arguments are the same, each method has different architecture and training arguments. If you want to alter them and not proceed with the defaults please check the scripts and the original papers for more information. Note: For FBNETGEN, one has to run the script: FBNETGEN_gather_results.py after running fbnetgen.py.
+There are additional input arguments that one can set. To run A-GCL, BrainIB, UCGL, BAnD, GCDA, FBNETGEN you can use the exact same format but change BolT to: A_GCL, BrainIB, UCGL, BAnD, GCDA, fbnetgen, respectively. Although the basic input arguments are the same, each method has different architecture and training arguments. If you want to alter them and not proceed with the defaults please check the scripts and the original papers for more information. Note: For FBNETGEN, one has to run the script: FBNETGEN_gather_results.py after running fbnetgen.py.
 
 
 # Train and test CVFormer and DeepFMRI on ASD classification using ABIDE I data
@@ -201,7 +203,7 @@ Scripts to extract and plot results exist in the result_scripts folder. Running 
 - prepare_for_BrainNetViewer.R: this script takes as input the .csv file containing feature importance values and the locations to the files AAL3_coords.npy and AICHA_coords.npy and creates files ready to be used by the BrainNetViewer toolbox
 
 # Replicating our results
-All data produced by the abovementioned scripts can be downloaded from the following link: https://drive.google.com/drive/folders/1uA63W0x96oI8LwWqD45k3DWM8IFGzndm?usp=sharing. Moreover, all our results and weights of our trained models can be downloaded from the following link: https://drive.google.com/drive/folders/1uA63W0x96oI8LwWqD45k3DWM8IFGzndm?usp=sharing. The .npy files that inlude the results of ASD classification also include the IDs of the subjects used for training, validation and testing, at each fold of the 10-fold CV. In this way we enable future studies to directly compare their models to ours (by using the same subjects for training, validation and testing), thus eliminating the need to run our code from scratch. In contrast, one can directly use the results extracted from the abovementioned scripts, when applied to the files downloaded from the aforementioned link. 
+All data produced by the abovementioned scripts can be downloaded from the following link: https://drive.google.com/drive/folders/1B4ebLvEnvL8R_g976vEHiSo0voIFin9I?usp=sharing. Moreover, all our results and weights of our trained models can be downloaded from the following link: https://drive.google.com/drive/folders/1JyiLSW8p9VOrio2ekgxoSsDp2Np2DqCK?usp=sharing. The .pkl files that inlude the results of ASD classification also include the IDs of the subjects used for training, validation and testing, at each fold of the 10-fold CV. In this way we enable future studies to directly compare their models to ours (by using the same subjects for training, validation and testing), thus eliminating the need to run our code from scratch. In contrast, one can directly use the results extracted from the abovementioned scripts, when applied to the files downloaded from the aforementioned link. 
 
 If you have any inquiry, encouter an error or need help understanding how to use this repository don't hesitate to contact us at: xaralabos10@hotmail.gr or charalampos.lamprou@ku.ac.ae
 
