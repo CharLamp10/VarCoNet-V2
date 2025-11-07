@@ -75,6 +75,9 @@ class LREvaluator(BaseEvaluator):
                     best_train_loss = class_loss_train
                     best_val_loss = class_loss_val
                     best_test_loss = class_loss_test
+                    best_train_probs = output_train[:,-1].cpu().numpy()
+                    best_val_probs = output_val[:,-1].cpu().numpy()
+                    best_test_probs = output_test[:,-1].cpu().numpy()
                     linear_state_dict = copy.deepcopy(classifier.state_dict())
                     
         print('')
@@ -89,9 +92,9 @@ class LREvaluator(BaseEvaluator):
             'best_train_loss': best_train_loss,
             'best_val_loss': best_val_loss,
             'best_test_loss': best_test_loss,
-            'train_probs': output_train[:,-1].cpu().numpy(),
-            'val_probs': output_val[:,-1].cpu().numpy(),
-            'test_probs': output_test[:,-1].cpu().numpy(),
+            'train_probs': best_train_probs,
+            'val_probs': best_val_probs,
+            'test_probs': best_test_probs,
             'y_train': y_train.cpu().numpy(),
             'y_val': y_val.cpu().numpy(),
             'y_test': y_test.cpu().numpy(),

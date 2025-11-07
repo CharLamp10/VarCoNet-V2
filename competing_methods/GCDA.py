@@ -209,8 +209,7 @@ if __name__ == '__main__':
                         help='Momentum of optimizer')
     parser.add_argument('--weight_decay', type=float, default=1e-4,
                         help='Weight decay')
-    parser.add_argument('--T', type=int, default=1000,
-                        help='Dont know')
+    parser.add_argument('--T', type=int, default=1000)
     parser.add_argument('--diffusion_hidden_mlp_dims', type=json.loads, default='{"X": 64, "E": 4, "y": 16}',
                         help='Hidden MLP dimensions as JSON dict')
     parser.add_argument('--diffusion_hidden_dims', type=json.loads, 
