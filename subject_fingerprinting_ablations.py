@@ -10,7 +10,7 @@ from model_scripts.VarCoNet import VarCoNet_noCNN, VarCoNet_noTransformer, VarCo
 import os
 import pickle
 import copy
-from utils import test_augment, augment, removeDuplicates, other_augment1, other_augment2
+from utils import test_augment, augment, BatchSampler, other_augment1, other_augment2
 import argparse  
 
 
@@ -114,7 +114,7 @@ def main(config):
         names = []
         with open(os.path.join(path,'names_train.txt'), 'r') as f:
             for line in f:
-                names.append(line.strip())
+                names.append(line.strip()[:6])
                 
         data = np.load(os.path.join(path,'train_data_HCP_' + atlas + '_resampled.npz'))
         train_data = []
@@ -167,8 +167,8 @@ def main(config):
             data = test_augment(data, config['test_winds'], config['num_test_winds'], max_length)
             val_data2[i] = data
             
-        train_loader = DataLoader(train_data, batch_size=config['batch_size'], shuffle=config['shuffle'])
-    
+        batch_sampler = BatchSampler(names, batch_size=config['batch_size'], shuffle = config['shuffle'])
+        train_loader = DataLoader(train_data, batch_sampler=batch_sampler)
         
         model_config = config['model_config']
         model_config['max_length'] = max_length
@@ -192,11 +192,7 @@ def main(config):
             for epoch in range(1,config['epochs']+1):
                 total_loss = 0.0
                 batch_count = 0                              
-                for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
-                    sample_inds = removeDuplicates(names,sample_inds)
-                    batch_list = [train_data[i] for i in sample_inds]
-                    batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
-                    batch_data = next(iter(batch_loader))
+                for batch_data in train_loader:
                     batch_data = augment(batch_data,config['train_length_limits'],device)
                     loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
                     total_loss += loss
@@ -248,11 +244,7 @@ def main(config):
             for epoch in range(1,config['epochs']+1):
                 total_loss = 0.0
                 batch_count = 0                              
-                for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
-                    sample_inds = removeDuplicates(names,sample_inds)
-                    batch_list = [train_data[i] for i in sample_inds]
-                    batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
-                    batch_data = next(iter(batch_loader))
+                for batch_data in train_loader:
                     batch_data = augment(batch_data,config['train_length_limits'],device)
                     loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
                     total_loss += loss
@@ -304,11 +296,7 @@ def main(config):
             for epoch in range(1,config['epochs']+1):
                 total_loss = 0.0
                 batch_count = 0                              
-                for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
-                    sample_inds = removeDuplicates(names,sample_inds)
-                    batch_list = [train_data[i] for i in sample_inds]
-                    batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
-                    batch_data = next(iter(batch_loader))
+                for batch_data in train_loader:
                     batch_data = other_augment1(batch_data,config['train_length_limits'],device)
                     loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
                     total_loss += loss
@@ -361,11 +349,7 @@ def main(config):
             for epoch in range(1,config['epochs']+1):
                 total_loss = 0.0
                 batch_count = 0                              
-                for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
-                    sample_inds = removeDuplicates(names,sample_inds)
-                    batch_list = [train_data[i] for i in sample_inds]
-                    batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
-                    batch_data = next(iter(batch_loader))
+                for batch_data in train_loader:
                     batch_data = other_augment2(batch_data,config['train_length_limits'],device)
                     loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
                     total_loss += loss

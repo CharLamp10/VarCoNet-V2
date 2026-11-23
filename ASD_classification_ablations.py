@@ -15,7 +15,7 @@ from model_scripts.classifier import LREvaluator
 import pickle
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import roc_auc_score
-from utils import augment, removeDuplicates, test_augment_overlap, other_augment1, other_augment2
+from utils import augment, BatchSampler, test_augment_overlap, other_augment1, other_augment2
 import argparse
 
 
@@ -226,7 +226,8 @@ def main(config):
                 y_train = np.concatenate((Y_train, y_train))
                 names_train = names_duplicate + names_train
                 train_dataset = ABIDEDataset(train_data, y_train)
-                train_loader = DataLoader(train_dataset, batch_size=config['batch_size'],shuffle=config['shuffle'])
+                batch_sampler = BatchSampler(names_train, batch_size=config['batch_size'], shuffle = config['shuffle'])
+                train_loader = DataLoader(train_dataset, batch_sampler=batch_sampler)
                 val_dataset = ABIDEDataset(val_data, y_val)
                 val_loader = DataLoader(val_dataset, batch_size=config['batch_size'])
                 test_dataset = ABIDEDataset(test_data, y_test)
@@ -254,11 +255,7 @@ def main(config):
                     for epoch in range(1,config['epochs']+1):
                         total_loss = 0.0
                         batch_count = 0                
-                        for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
-                            sample_inds = removeDuplicates(names_train,sample_inds)
-                            batch_list = [train_data[i] for i in sample_inds]
-                            batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
-                            batch_data = next(iter(batch_loader))
+                        for batch_data in train_loader:
                             batch_data = augment(batch_data,train_length_limits,device)
                             loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
                             total_loss += loss
@@ -320,7 +317,8 @@ def main(config):
                 y_train = np.concatenate((Y_train, y_train))
                 names_train = names_duplicate + names_train
                 train_dataset = ABIDEDataset(train_data, y_train)
-                train_loader = DataLoader(train_dataset, batch_size=config['batch_size'],shuffle=config['shuffle'])
+                batch_sampler = BatchSampler(names_train, batch_size=config['batch_size'], shuffle = config['shuffle'])
+                train_loader = DataLoader(train_dataset, batch_sampler=batch_sampler)
                 val_dataset = ABIDEDataset(val_data, y_val)
                 val_loader = DataLoader(val_dataset, batch_size=config['batch_size'])
                 test_dataset = ABIDEDataset(test_data, y_test)
@@ -346,11 +344,7 @@ def main(config):
                     for epoch in range(1,config['epochs']+1):
                         total_loss = 0.0
                         batch_count = 0                
-                        for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
-                            sample_inds = removeDuplicates(names_train,sample_inds)
-                            batch_list = [train_data[i] for i in sample_inds]
-                            batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
-                            batch_data = next(iter(batch_loader))
+                        for batch_data in train_loader:
                             batch_data = augment(batch_data,train_length_limits,device)
                             loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
                             total_loss += loss
@@ -543,7 +537,8 @@ def main(config):
                 y_train = np.concatenate((Y_train, y_train))
                 names_train = names_duplicate + names_train
                 train_dataset = ABIDEDataset(train_data, y_train)
-                train_loader = DataLoader(train_dataset, batch_size=config['batch_size'],shuffle=config['shuffle'])
+                batch_sampler = BatchSampler(names_train, batch_size=config['batch_size'], shuffle = config['shuffle'])
+                train_loader = DataLoader(train_dataset, batch_sampler=batch_sampler)
                 val_dataset = ABIDEDataset(val_data, y_val)
                 val_loader = DataLoader(val_dataset, batch_size=config['batch_size'])
                 test_dataset = ABIDEDataset(test_data, y_test)
@@ -569,11 +564,7 @@ def main(config):
                     for epoch in range(1,config['epochs']+1):
                         total_loss = 0.0
                         batch_count = 0                
-                        for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
-                            sample_inds = removeDuplicates(names_train,sample_inds)
-                            batch_list = [train_data[i] for i in sample_inds]
-                            batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
-                            batch_data = next(iter(batch_loader))
+                        for batch_data in train_loader:
                             batch_data = other_augment1(batch_data,train_length_limits,device)
                             loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
                             total_loss += loss
@@ -635,7 +626,8 @@ def main(config):
                 y_train = np.concatenate((Y_train, y_train))
                 names_train = names_duplicate + names_train
                 train_dataset = ABIDEDataset(train_data, y_train)
-                train_loader = DataLoader(train_dataset, batch_size=config['batch_size'],shuffle=config['shuffle'])
+                batch_sampler = BatchSampler(names_train, batch_size=config['batch_size'], shuffle = config['shuffle'])
+                train_loader = DataLoader(train_dataset, batch_sampler=batch_sampler)
                 val_dataset = ABIDEDataset(val_data, y_val)
                 val_loader = DataLoader(val_dataset, batch_size=config['batch_size'])
                 test_dataset = ABIDEDataset(test_data, y_test)
@@ -661,11 +653,7 @@ def main(config):
                     for epoch in range(1,config['epochs']+1):
                         total_loss = 0.0
                         batch_count = 0                
-                        for batch_idx, sample_inds in enumerate(train_loader.batch_sampler):
-                            sample_inds = removeDuplicates(names_train,sample_inds)
-                            batch_list = [train_data[i] for i in sample_inds]
-                            batch_loader = DataLoader(batch_list, batch_size=len(batch_list))
-                            batch_data = next(iter(batch_loader))
+                        for batch_data in train_loader:
                             batch_data = other_augment2(batch_data,train_length_limits,device)
                             loss,input_dim = train(batch_data,encoder_model,contrast_model,optimizer)
                             total_loss += loss

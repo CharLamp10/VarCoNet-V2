@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-path_results = r'' #here, enter the path where results have been saved
-atlas = 'AICHA'         #choose atlas (AICHA, AAL)
+path_results = r'/home/student1/Desktop/Charalampos_Lamprou/VarCoNet_results_revision' #here, enter the path where results have been saved
+atlas = 'AAL'         #choose atlas (AICHA, AAL)
 
 if not os.path.exists(os.path.join(path_results,"plots")):
     os.mkdir(os.path.join(path_results,"plots"))
@@ -104,7 +104,7 @@ sns.set(style="whitegrid")
 
 ax = sns.boxplot(x='Group', y='Value', hue='Method', data=df, palette='Set2')
 
-plt.ylabel('Accuracy', fontsize=20)
+plt.ylabel('Fingerprinting Accuracy', fontsize=20)
 plt.xlabel('Duration Combinations (mins)', fontsize=20)
 
 plt.legend(loc='lower right', fontsize = 16)

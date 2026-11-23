@@ -7,10 +7,10 @@ import pandas as pd
 import seaborn as sns
 from statannotations.Annotator import Annotator
 
-path_results = r'' #here, enter the path where results have been saved
+path_results = r'/media/student1/Extreme Pro/VarCoNet_results_revision' #here, enter the path where results have been saved
 
-if not os.path.exists(os.path.join(path_results,"plots")):
-    os.mkdir(os.path.join(path_results,"plots"))
+if not os.path.exists(os.path.join(path_results,"plots_proofs")):
+    os.mkdir(os.path.join(path_results,"plots_proofs"))
     
 with open(os.path.join(path_results,'results_ABIDEI','AICHA','ABIDEI_VarCoNet_results.pkl'), 'rb') as f:
     ASD_result_VarCoNet_aicha = pickle.load(f)
@@ -347,12 +347,12 @@ y = np.concatenate((noCNN_AICHA_test_losses, aicha_test_losses,
 x = np.concatenate((np.full((2*repeats,), 'Loss'),
                     np.full((2*repeats,), 'AUC'),
                     np.full((2*repeats,), 'F1')), axis=0)
-hue = np.concatenate((np.full((repeats,), 'No'),
-                      np.full((repeats,), 'Yes'),
-                      np.full((repeats,), 'No'),
-                      np.full((repeats,), 'Yes'),
-                      np.full((repeats,), 'No'),
-                      np.full((repeats,), 'Yes')), axis=0)
+hue = np.concatenate((np.full((repeats,), 'Transformer'),
+                      np.full((repeats,), '1D-CNN-Transformer'),
+                      np.full((repeats,), 'Transformer'),
+                      np.full((repeats,), '1D-CNN-Transformer'),
+                      np.full((repeats,), 'Transformer'),
+                      np.full((repeats,), '1D-CNN-Transformer')), axis=0)
 
 df = pd.DataFrame({'Score': y, 'With CNN': hue, 'Metric': x})
 
@@ -365,9 +365,9 @@ plt.legend(loc='lower right', fontsize=16)
 plt.tight_layout()
 
 pairs = [
-    (("Loss", "No"), ("Loss", "Yes")),
-    (("AUC", "No"), ("AUC", "Yes")),
-    (("F1", "No"), ("F1", "Yes"))
+    (("Loss", "Transformer"), ("Loss", "1D-CNN-Transformer")),
+    (("AUC", "Transformer"), ("AUC", "1D-CNN-Transformer")),
+    (("F1", "Transformer"), ("F1", "1D-CNN-Transformer"))
 ]
 
 # Add statistical annotation
@@ -375,7 +375,7 @@ annotator = Annotator(ax, pairs, data=df, x="Metric", y="Score", hue="With CNN")
 annotator.configure(test='t-test_ind', text_format='star', loc='inside', verbose=2)
 annotator.apply_and_annotate()
 
-plt.savefig(os.path.join(path_results, "plots", "ABIDE_noCNN_AICHA.png"),
+plt.savefig(os.path.join(path_results, "plots_proofs", "ABIDE_noCNN_AICHA.png"),
             dpi=600, bbox_inches='tight')
 plt.show()
 
@@ -385,9 +385,9 @@ y = np.concatenate((noCNN_AAL_test_losses, aal_test_losses,
                     noCNN_AAL_test_aucs, aal_test_aucs,
                     noCNN_AAL_test_f1, aal_test_f1), axis=0)
 x = np.concatenate((np.full((2*repeats,), 'Loss'),np.full((2*repeats,), 'AUC'),np.full((2*repeats,), 'F1')),axis=0)
-hue = np.concatenate((np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
-                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
-                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes')),axis=0)
+hue = np.concatenate((np.full((repeats,), 'Transformer'),np.full((repeats,), '1D-CNN-Transformer'),
+                      np.full((repeats,), 'Transformer'),np.full((repeats,), '1D-CNN-Transformer'),
+                      np.full((repeats,), 'Transformer'),np.full((repeats,), '1D-CNN-Transformer')),axis=0)
 
 d = {'Score': y, 'With CNN': hue, 'Metric': x}
 df = pd.DataFrame(data=d)
@@ -400,9 +400,9 @@ plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
 
 pairs = [
-    (("Loss", "No"), ("Loss", "Yes")),
-    (("AUC", "No"), ("AUC", "Yes")),
-    (("F1", "No"), ("F1", "Yes"))
+    (("Loss", "Transformer"), ("Loss", "1D-CNN-Transformer")),
+    (("AUC", "Transformer"), ("AUC", "1D-CNN-Transformer")),
+    (("F1", "Transformer"), ("F1", "1D-CNN-Transformer"))
 ]
 
 # Add statistical annotation
@@ -410,7 +410,7 @@ annotator = Annotator(ax, pairs, data=df, x="Metric", y="Score", hue="With CNN")
 annotator.configure(test='t-test_ind', text_format='star', loc='inside', verbose=2)
 annotator.apply_and_annotate()
 
-plt.savefig(os.path.join(path_results,"plots","ABIDE_noCNN_AAL.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots_proofs","ABIDE_noCNN_AAL.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -419,9 +419,9 @@ y = np.concatenate((SL_AICHA_test_losses, aicha_test_losses,
                     SL_AICHA_test_aucs, aicha_test_aucs,
                     SL_AICHA_test_f1, aicha_test_f1), axis=0)
 x = np.concatenate((np.full((2*repeats,), 'Loss'),np.full((2*repeats,), 'AUC'),np.full((2*repeats,), 'F1')),axis=0)
-hue = np.concatenate((np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
-                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
-                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes')),axis=0)
+hue = np.concatenate((np.full((repeats,), 'SL'),np.full((repeats,), 'VarCoNet'),
+                      np.full((repeats,), 'SL'),np.full((repeats,), 'VarCoNet'),
+                      np.full((repeats,), 'SL'),np.full((repeats,), 'VarCoNet')),axis=0)
 
 d = {'Score': y, 'SSL': hue, 'Metric': x}
 df = pd.DataFrame(data=d)
@@ -434,9 +434,9 @@ plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
 
 pairs = [
-    (("Loss", "No"), ("Loss", "Yes")),
-    (("AUC", "No"), ("AUC", "Yes")),
-    (("F1", "No"), ("F1", "Yes"))
+    (("Loss", "SL"), ("Loss", "VarCoNet")),
+    (("AUC", "SL"), ("AUC", "VarCoNet")),
+    (("F1", "SL"), ("F1", "VarCoNet"))
 ]
 
 # Add statistical annotation
@@ -444,7 +444,7 @@ annotator = Annotator(ax, pairs, data=df, x="Metric", y="Score", hue="SSL")
 annotator.configure(test='t-test_ind', text_format='star', loc='inside', verbose=2)
 annotator.apply_and_annotate()
 
-plt.savefig(os.path.join(path_results,"plots","ABIDE_SSL_AICHA.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots_proofs","ABIDE_SSL_AICHA.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -453,9 +453,9 @@ y = np.concatenate((SL_AAL_test_losses, aal_test_losses,
                     SL_AAL_test_aucs, aal_test_aucs,
                     SL_AAL_test_f1, aal_test_f1), axis=0)
 x = np.concatenate((np.full((2*repeats,), 'Loss'),np.full((2*repeats,), 'AUC'),np.full((2*repeats,), 'F1')),axis=0)
-hue = np.concatenate((np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
-                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
-                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes')),axis=0)
+hue = np.concatenate((np.full((repeats,), 'SL'),np.full((repeats,), 'VarCoNet'),
+                      np.full((repeats,), 'SL'),np.full((repeats,), 'VarCoNet'),
+                      np.full((repeats,), 'SL'),np.full((repeats,), 'VarCoNet')),axis=0)
 
 d = {'Score': y, 'SSL': hue, 'Metric': x}
 df = pd.DataFrame(data=d)
@@ -468,9 +468,9 @@ plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
 
 pairs = [
-    (("Loss", "No"), ("Loss", "Yes")),
-    (("AUC", "No"), ("AUC", "Yes")),
-    (("F1", "No"), ("F1", "Yes"))
+    (("Loss", "SL"), ("Loss", "VarCoNet")),
+    (("AUC", "SL"), ("AUC", "VarCoNet")),
+    (("F1", "SL"), ("F1", "VarCoNet"))
 ]
 
 # Add statistical annotation
@@ -478,7 +478,7 @@ annotator = Annotator(ax, pairs, data=df, x="Metric", y="Score", hue="SSL")
 annotator.configure(test='t-test_ind', text_format='star', loc='inside', verbose=2)
 annotator.apply_and_annotate()
 
-plt.savefig(os.path.join(path_results,"plots","ABIDE_SSL_AAL.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots_proofs","ABIDE_SSL_AAL.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 plt.figure()
@@ -486,9 +486,9 @@ y = np.concatenate((noTransformer_AICHA_test_losses, aicha_test_losses,
                     noTransformer_AICHA_test_aucs, aicha_test_aucs,
                     noTransformer_AICHA_test_f1, aicha_test_f1), axis=0)
 x = np.concatenate((np.full((2*repeats,), 'Loss'),np.full((2*repeats,), 'AUC'),np.full((2*repeats,), 'F1')),axis=0)
-hue = np.concatenate((np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
-                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
-                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes')),axis=0)
+hue = np.concatenate((np.full((repeats,), '1D-CNN'),np.full((repeats,), '1D-CNN-Transformer'),
+                      np.full((repeats,), '1D-CNN'),np.full((repeats,), '1D-CNN-Transformer'),
+                      np.full((repeats,), '1D-CNN'),np.full((repeats,), '1D-CNN-Transformer')),axis=0)
 
 d = {'Score': y, 'With Transformer': hue, 'Metric': x}
 df = pd.DataFrame(data=d)
@@ -501,9 +501,9 @@ plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
 
 pairs = [
-    (("Loss", "No"), ("Loss", "Yes")),
-    (("AUC", "No"), ("AUC", "Yes")),
-    (("F1", "No"), ("F1", "Yes"))
+    (("Loss", "1D-CNN"), ("Loss", "1D-CNN-Transformer")),
+    (("AUC", "1D-CNN"), ("AUC", "1D-CNN-Transformer")),
+    (("F1", "1D-CNN"), ("F1", "1D-CNN-Transformer"))
 ]
 
 # Add statistical annotation
@@ -511,7 +511,7 @@ annotator = Annotator(ax, pairs, data=df, x="Metric", y="Score", hue="With Trans
 annotator.configure(test='t-test_ind', text_format='star', loc='inside', verbose=2)
 annotator.apply_and_annotate()
 
-plt.savefig(os.path.join(path_results,"plots","ABIDE_noTransformer_AICHA.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots_proofs","ABIDE_noTransformer_AICHA.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 plt.figure()
@@ -519,9 +519,9 @@ y = np.concatenate((noTransformer_AAL_test_losses, aal_test_losses,
                     noTransformer_AAL_test_aucs, aal_test_aucs,
                     noTransformer_AAL_test_f1, aal_test_f1), axis=0)
 x = np.concatenate((np.full((2*repeats,), 'Loss'),np.full((2*repeats,), 'AUC'),np.full((2*repeats,), 'F1')),axis=0)
-hue = np.concatenate((np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
-                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes'),
-                      np.full((repeats,), 'No'),np.full((repeats,), 'Yes')),axis=0)
+hue = np.concatenate((np.full((repeats,), '1D-CNN'),np.full((repeats,), '1D-CNN-Transformer'),
+                      np.full((repeats,), '1D-CNN'),np.full((repeats,), '1D-CNN-Transformer'),
+                      np.full((repeats,), '1D-CNN'),np.full((repeats,), '1D-CNN-Transformer')),axis=0)
 
 d = {'Score': y, 'With Transformer': hue, 'Metric': x}
 df = pd.DataFrame(data=d)
@@ -534,9 +534,9 @@ plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
 
 pairs = [
-    (("Loss", "No"), ("Loss", "Yes")),
-    (("AUC", "No"), ("AUC", "Yes")),
-    (("F1", "No"), ("F1", "Yes"))
+    (("Loss", "1D-CNN"), ("Loss", "1D-CNN-Transformer")),
+    (("AUC", "1D-CNN"), ("AUC", "1D-CNN-Transformer")),
+    (("F1", "1D-CNN"), ("F1", "1D-CNN-Transformer"))
 ]
 
 # Add statistical annotation
@@ -544,7 +544,7 @@ annotator = Annotator(ax, pairs, data=df, x="Metric", y="Score", hue="With Trans
 annotator.configure(test='t-test_ind', text_format='star', loc='inside', verbose=2)
 annotator.apply_and_annotate()
 
-plt.savefig(os.path.join(path_results,"plots","ABIDE_noTransformer_AAL.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots_proofs","ABIDE_noTransformer_AAL.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 plt.figure()
@@ -577,7 +577,7 @@ annotator = Annotator(ax, pairs, data=df, x="Metric", y="Score", hue="Aug. strat
 annotator.configure(test='t-test_ind', text_format='star', loc='inside', verbose=2)
 annotator.apply_and_annotate()
 
-plt.savefig(os.path.join(path_results,"plots","ABIDE_augment_strategies_AICHA.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots_proofs","ABIDE_augment_strategies_AICHA.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 plt.figure()
@@ -610,7 +610,7 @@ annotator = Annotator(ax, pairs, data=df, x="Metric", y="Score", hue="Aug. strat
 annotator.configure(test='t-test_ind', text_format='star', loc='inside', verbose=2)
 annotator.apply_and_annotate()
 
-plt.savefig(os.path.join(path_results,"plots","ABIDE_augment_strategies_AAL.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots_proofs","ABIDE_augment_strategies_AAL.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -692,7 +692,7 @@ x = np.concatenate((np.full((num_test_winds,), '2-2'),np.full((num_test_winds,),
                     np.full((num_test_winds,), '2-2'),np.full((num_test_winds,), '2-5'),
                     np.full((num_test_winds,), '2-8'),np.full((num_test_winds,), '5-5'),
                     np.full((num_test_winds,), '5-8'),np.full((num_test_winds,), '8-8'),),axis=0)
-hue = np.concatenate((np.full((6*num_test_winds,), 'No'), np.full((6*num_test_winds,), 'Yes')),axis=0)
+hue = np.concatenate((np.full((6*num_test_winds,), 'Transformer'), np.full((6*num_test_winds,), '1D-CNN-Transformer')),axis=0)
 
 d = {'Fingerprinting Accuracy': y, 'With CNN': hue, 'Duration Combinations (mins)': x}
 df = pd.DataFrame(data=d)
@@ -705,12 +705,12 @@ plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
 
 pairs = [
-    (("2-2", "No"), ("2-2", "Yes")),
-    (("2-5", "No"), ("2-5", "Yes")),
-    (("2-8", "No"), ("2-8", "Yes")),
-    (("5-5", "No"), ("5-5", "Yes")),
-    (("5-8", "No"), ("5-8", "Yes")),
-    (("8-8", "No"), ("8-8", "Yes"))
+    (("2-2", "Transformer"), ("2-2", "1D-CNN-Transformer")),
+    (("2-5", "Transformer"), ("2-5", "1D-CNN-Transformer")),
+    (("2-8", "Transformer"), ("2-8", "1D-CNN-Transformer")),
+    (("5-5", "Transformer"), ("5-5", "1D-CNN-Transformer")),
+    (("5-8", "Transformer"), ("5-8", "1D-CNN-Transformer")),
+    (("8-8", "Transformer"), ("8-8", "1D-CNN-Transformer"))
 ]
 
 # Add statistical annotation
@@ -718,7 +718,7 @@ annotator = Annotator(ax, pairs, data=df, x="Duration Combinations (mins)", y="F
 annotator.configure(test='t-test_ind', text_format='star', loc='inside', verbose=2)
 annotator.apply_and_annotate()
 
-plt.savefig(os.path.join(path_results,"plots","HCP_noCNN_AAL.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots_proofs","HCP_noCNN_AAL.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -732,7 +732,7 @@ x = np.concatenate((np.full((num_test_winds,), '2-2'),np.full((num_test_winds,),
                     np.full((num_test_winds,), '2-2'),np.full((num_test_winds,), '2-5'),
                     np.full((num_test_winds,), '2-8'),np.full((num_test_winds,), '5-5'),
                     np.full((num_test_winds,), '5-8'),np.full((num_test_winds,), '8-8'),),axis=0)
-hue = np.concatenate((np.full((6*num_test_winds,), 'No'), np.full((6*num_test_winds,), 'Yes')),axis=0)
+hue = np.concatenate((np.full((6*num_test_winds,), 'Transformer'), np.full((6*num_test_winds,), '1D-CNN-Transformer')),axis=0)
 
 d = {'Fingerprinting Accuracy': y, 'With CNN': hue, 'Duration Combinations (mins)': x}
 df = pd.DataFrame(data=d)
@@ -745,12 +745,12 @@ plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
 
 pairs = [
-    (("2-2", "No"), ("2-2", "Yes")),
-    (("2-5", "No"), ("2-5", "Yes")),
-    (("2-8", "No"), ("2-8", "Yes")),
-    (("5-5", "No"), ("5-5", "Yes")),
-    (("5-8", "No"), ("5-8", "Yes")),
-    (("8-8", "No"), ("8-8", "Yes"))
+    (("2-2", "Transformer"), ("2-2", "1D-CNN-Transformer")),
+    (("2-5", "Transformer"), ("2-5", "1D-CNN-Transformer")),
+    (("2-8", "Transformer"), ("2-8", "1D-CNN-Transformer")),
+    (("5-5", "Transformer"), ("5-5", "1D-CNN-Transformer")),
+    (("5-8", "Transformer"), ("5-8", "1D-CNN-Transformer")),
+    (("8-8", "Transformer"), ("8-8", "1D-CNN-Transformer"))
 ]
 
 # Add statistical annotation
@@ -758,7 +758,7 @@ annotator = Annotator(ax, pairs, data=df, x="Duration Combinations (mins)", y="F
 annotator.configure(test='t-test_ind', text_format='star', loc='inside', verbose=2)
 annotator.apply_and_annotate()
 
-plt.savefig(os.path.join(path_results,"plots","HCP_noCNN_AICHA.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots_proofs","HCP_noCNN_AICHA.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 plt.figure()
@@ -771,7 +771,7 @@ x = np.concatenate((np.full((num_test_winds,), '2-2'),np.full((num_test_winds,),
                     np.full((num_test_winds,), '2-2'),np.full((num_test_winds,), '2-5'),
                     np.full((num_test_winds,), '2-8'),np.full((num_test_winds,), '5-5'),
                     np.full((num_test_winds,), '5-8'),np.full((num_test_winds,), '8-8'),),axis=0)
-hue = np.concatenate((np.full((6*num_test_winds,), 'No'), np.full((6*num_test_winds,), 'Yes')),axis=0)
+hue = np.concatenate((np.full((6*num_test_winds,), '1D-CNN'), np.full((6*num_test_winds,), '1D-CNN-Transformer')),axis=0)
 
 d = {'Fingerprinting Accuracy': y, 'With Transformer': hue, 'Duration Combinations (mins)': x}
 df = pd.DataFrame(data=d)
@@ -784,12 +784,12 @@ plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
 
 pairs = [
-    (("2-2", "No"), ("2-2", "Yes")),
-    (("2-5", "No"), ("2-5", "Yes")),
-    (("2-8", "No"), ("2-8", "Yes")),
-    (("5-5", "No"), ("5-5", "Yes")),
-    (("5-8", "No"), ("5-8", "Yes")),
-    (("8-8", "No"), ("8-8", "Yes"))
+    (("2-2", "1D-CNN"), ("2-2", "1D-CNN-Transformer")),
+    (("2-5", "1D-CNN"), ("2-5", "1D-CNN-Transformer")),
+    (("2-8", "1D-CNN"), ("2-8", "1D-CNN-Transformer")),
+    (("5-5", "1D-CNN"), ("5-5", "1D-CNN-Transformer")),
+    (("5-8", "1D-CNN"), ("5-8", "1D-CNN-Transformer")),
+    (("8-8", "1D-CNN"), ("8-8", "1D-CNN-Transformer"))
 ]
 
 # Add statistical annotation
@@ -797,7 +797,7 @@ annotator = Annotator(ax, pairs, data=df, x="Duration Combinations (mins)", y="F
 annotator.configure(test='t-test_ind', text_format='star', loc='inside', verbose=2)
 annotator.apply_and_annotate()
 
-plt.savefig(os.path.join(path_results,"plots","HCP_noTransformer_AAL.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots_proofs","HCP_noTransformer_AAL.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -811,7 +811,7 @@ x = np.concatenate((np.full((num_test_winds,), '2-2'),np.full((num_test_winds,),
                     np.full((num_test_winds,), '2-2'),np.full((num_test_winds,), '2-5'),
                     np.full((num_test_winds,), '2-8'),np.full((num_test_winds,), '5-5'),
                     np.full((num_test_winds,), '5-8'),np.full((num_test_winds,), '8-8'),),axis=0)
-hue = np.concatenate((np.full((6*num_test_winds,), 'No'), np.full((6*num_test_winds,), 'Yes')),axis=0)
+hue = np.concatenate((np.full((6*num_test_winds,), '1D-CNN'), np.full((6*num_test_winds,), '1D-CNN-Transformer')),axis=0)
 
 d = {'Fingerprinting Accuracy': y, 'With Transformer': hue, 'Duration Combinations (mins)': x}
 df = pd.DataFrame(data=d)
@@ -824,12 +824,12 @@ plt.legend(loc='lower right', fontsize = 16)
 plt.tight_layout()
 
 pairs = [
-    (("2-2", "No"), ("2-2", "Yes")),
-    (("2-5", "No"), ("2-5", "Yes")),
-    (("2-8", "No"), ("2-8", "Yes")),
-    (("5-5", "No"), ("5-5", "Yes")),
-    (("5-8", "No"), ("5-8", "Yes")),
-    (("8-8", "No"), ("8-8", "Yes"))
+    (("2-2", "1D-CNN"), ("2-2", "1D-CNN-Transformer")),
+    (("2-5", "1D-CNN"), ("2-5", "1D-CNN-Transformer")),
+    (("2-8", "1D-CNN"), ("2-8", "1D-CNN-Transformer")),
+    (("5-5", "1D-CNN"), ("5-5", "1D-CNN-Transformer")),
+    (("5-8", "1D-CNN"), ("5-8", "1D-CNN-Transformer")),
+    (("8-8", "1D-CNN"), ("8-8", "1D-CNN-Transformer"))
 ]
 
 # Add statistical annotation
@@ -837,7 +837,7 @@ annotator = Annotator(ax, pairs, data=df, x="Duration Combinations (mins)", y="F
 annotator.configure(test='t-test_ind', text_format='star', loc='inside', verbose=2)
 annotator.apply_and_annotate()
 
-plt.savefig(os.path.join(path_results,"plots","HCP_noTransformer_AICHA.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots_proofs","HCP_noTransformer_AICHA.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -877,7 +877,7 @@ annotator = Annotator(ax, pairs, data=df, x="Duration Combinations (mins)", y="F
 annotator.configure(test='t-test_ind', text_format='star', loc='inside', verbose=2)
 annotator.apply_and_annotate()
 
-plt.savefig(os.path.join(path_results,"plots","HCP_augment_strategies_AAL.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots_proofs","HCP_augment_strategies_AAL.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
@@ -917,7 +917,7 @@ annotator = Annotator(ax, pairs, data=df, x="Duration Combinations (mins)", y="F
 annotator.configure(test='t-test_ind', text_format='star', loc='inside', verbose=2)
 annotator.apply_and_annotate()
 
-plt.savefig(os.path.join(path_results,"plots","HCP_augment_strategies_AICHA.png"), dpi=600, bbox_inches='tight')
+plt.savefig(os.path.join(path_results,"plots_proofs","HCP_augment_strategies_AICHA.png"), dpi=600, bbox_inches='tight')
 plt.show()
 
 
